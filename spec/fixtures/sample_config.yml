@@ -1,0 +1,25 @@
+# spec/fixtures/sample_config.yml
+content_dir: /tmp/lowmu_test_content
+
+llm:
+  provider: anthropic
+  model: claude-opus-4-6
+
+targets:
+  - name: tracyatteberry
+    type: hugo
+    base_url: https://tracyatteberry.com
+    base_path: /tmp/lowmu_test_hugo
+  - name: substack
+    type: substack
+    auth:
+      type: api_key
+      api_key: test_api_key
+  - name: mastodon
+    type: mastodon
+    base_url: https://mastodon.social
+    auth:
+      type: oauth
+      access_token: test_access_token
+  - name: linkedin
+    type: linkedin

@@ -1,0 +1,71 @@
+require "spec_helper"
+
+RSpec.describe Lowmu::Config do
+  let(:fixture_path) { "spec/fixtures/sample_config.yml" }
+
+  describe ".load" do
+    it "loads a valid config file" do
+      config = described_class.load(fixture_path)
+      expect(config).to be_a(described_class)
+    end
+
+    it "raises an error when the file does not exist" do
+      expect { described_class.load("/nonexistent/config.yml") }
+        .to raise_error(Lowmu::Error, /not found/)
+    end
+  end
+
+  describe "#content_dir" do
+    it "returns the expanded content directory path" do
+      config = described_class.load(fixture_path)
+      expect(config.content_dir).to eq("/tmp/lowmu_test_content")
+    end
+  end
+
+  describe "#llm" do
+    it "returns the llm configuration hash" do
+      config = described_class.load(fixture_path)
+      expect(config.llm["model"]).to eq("claude-opus-4-6")
+    end
+  end
+
+  describe "#targets" do
+    it "returns all configured targets" do
+      config = described_class.load(fixture_path)
+      expect(config.targets.length).to eq(4)
+    end
+  end
+
+  describe "#target_config" do
+    it "returns the config hash for a known target" do
+      config = described_class.load(fixture_path)
+      target = config.target_config("mastodon")
+      expect(target["type"]).to eq("mastodon")
+    end
+
+    it "raises an error for an unknown target" do
+      config = described_class.load(fixture_path)
+      expect { config.target_config("nonexistent") }
+        .to raise_error(Lowmu::Error, /Unknown target/)
+    end
+  end
+
+  describe "validation" do
+    it "raises when content_dir is missing" do
+      expect { described_class.new({}) }
+        .to raise_error(Lowmu::Error, /content_dir/)
+    end
+
+    it "raises when a target is missing the name key" do
+      data = {"content_dir" => "/tmp", "targets" => [{"type" => "hugo"}]}
+      expect { described_class.new(data) }
+        .to raise_error(Lowmu::Error, /name/)
+    end
+
+    it "raises when a target is missing the type key" do
+      data = {"content_dir" => "/tmp", "targets" => [{"name" => "myblog"}]}
+      expect { described_class.new(data) }
+        .to raise_error(Lowmu::Error, /type/)
+    end
+  end
+end
