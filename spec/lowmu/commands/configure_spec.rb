@@ -19,7 +19,7 @@ RSpec.describe Lowmu::Commands::Configure do
       it "writes a valid YAML template" do
         described_class.new(config_path).call
         data = YAML.safe_load_file(config_path)
-        expect(data).to have_key("content_dir")
+        expect(data).to have_key("hugo_content_dir")
         expect(data).to have_key("targets")
       end
     end

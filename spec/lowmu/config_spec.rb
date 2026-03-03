@@ -15,10 +15,22 @@ RSpec.describe Lowmu::Config do
     end
   end
 
+  describe "#hugo_content_dir" do
+    it "returns the expanded hugo content directory path" do
+      config = described_class.load(fixture_path)
+      expect(config.hugo_content_dir).to eq("/tmp/lowmu_test_hugo_content")
+    end
+  end
+
   describe "#content_dir" do
     it "returns the expanded content directory path" do
       config = described_class.load(fixture_path)
       expect(config.content_dir).to eq("/tmp/lowmu_test_content")
+    end
+
+    it "defaults to .lowmu when not specified" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo"})
+      expect(config.content_dir).to eq(File.expand_path(".lowmu"))
     end
   end
 
@@ -51,21 +63,23 @@ RSpec.describe Lowmu::Config do
   end
 
   describe "validation" do
-    it "raises when content_dir is missing" do
+    it "raises when hugo_content_dir is missing" do
       expect { described_class.new({}) }
-        .to raise_error(Lowmu::Error, /content_dir/)
+        .to raise_error(Lowmu::Error, /hugo_content_dir/)
+    end
+
+    it "does not raise when content_dir is missing (uses default)" do
+      expect { described_class.new({"hugo_content_dir" => "/tmp/hugo"}) }.not_to raise_error
     end
 
     it "raises when a target is missing the name key" do
-      data = {"content_dir" => "/tmp", "targets" => [{"type" => "hugo"}]}
-      expect { described_class.new(data) }
-        .to raise_error(Lowmu::Error, /name/)
+      data = {"hugo_content_dir" => "/tmp", "targets" => [{"type" => "hugo"}]}
+      expect { described_class.new(data) }.to raise_error(Lowmu::Error, /name/)
     end
 
     it "raises when a target is missing the type key" do
-      data = {"content_dir" => "/tmp", "targets" => [{"name" => "myblog"}]}
-      expect { described_class.new(data) }
-        .to raise_error(Lowmu::Error, /type/)
+      data = {"hugo_content_dir" => "/tmp", "targets" => [{"name" => "myblog"}]}
+      expect { described_class.new(data) }.to raise_error(Lowmu::Error, /type/)
     end
   end
 end

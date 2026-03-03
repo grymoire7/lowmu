@@ -1,4 +1,4 @@
-# spec/fixtures/sample_config.yml
+hugo_content_dir: /tmp/lowmu_test_hugo_content
 content_dir: /tmp/lowmu_test_content
 
 llm:
@@ -12,9 +12,6 @@ targets:
     base_path: /tmp/lowmu_test_hugo
   - name: substack
     type: substack
-    auth:
-      type: api_key
-      api_key: test_api_key
   - name: mastodon
     type: mastodon
     base_url: https://mastodon.social
