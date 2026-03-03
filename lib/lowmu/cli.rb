@@ -72,6 +72,10 @@ module Lowmu
       error_exit(e.message)
     end
 
+    def self.printable_commands(all = true, subcommand = false)
+      super.reject { |cmd| cmd.first.match?(/\btree\b/) }
+    end
+
     private
 
     def error_exit(message)
