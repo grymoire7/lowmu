@@ -22,7 +22,9 @@ module Lowmu
       end
 
       def ask_llm(prompt)
-        model = @llm_config.fetch("model", "claude-opus-4-6")
+        model = @llm_config.fetch("model") do
+          raise Error, "No model configured. Run `lowmu configure` to set up an LLM provider."
+        end
         RubyLLM.chat(model: model).ask(prompt).content
       end
     end
