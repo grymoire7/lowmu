@@ -84,14 +84,14 @@ RSpec.describe Lowmu::Commands::Generate do
       before { mark_generated(generated_at: Time.now - 60) }
 
       it "does not generate without explicit slug or --force" do
-        allow($stderr).to receive(:puts)
-        results = described_class.new(config: config).call
+        results = nil
+        expect { results = described_class.new(config: config).call }.to output.to_stderr
         expect(results).to be_empty
       end
 
       it "warns about stale content to stderr" do
-        expect($stderr).to receive(:puts).with(/stale.*my-post/i)
-        described_class.new(config: config).call
+        expect { described_class.new(config: config).call }
+          .to output(/stale.*my-post/i).to_stderr
       end
 
       it "generates when specific slug is given" do
