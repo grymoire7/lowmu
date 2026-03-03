@@ -7,9 +7,14 @@ RSpec.describe Lowmu::Publishers::Substack do
   after { FileUtils.rm_rf(slug_dir) }
 
   describe "#publish" do
-    it "raises a NotImplementedError with a helpful message" do
+    it "raises an error with a helpful message mentioning Substack" do
       expect { described_class.new(slug_dir, target_config).publish }
         .to raise_error(Lowmu::Error, /Substack.*not yet supported/)
+    end
+
+    it "includes the path to the generated post file in the error" do
+      expect { described_class.new(slug_dir, target_config).publish }
+        .to raise_error(Lowmu::Error, /substack_post\.md/)
     end
   end
 end
