@@ -8,8 +8,8 @@ module Lowmu
         "linkedin" => Generators::Linkedin
       }.freeze
 
-      def initialize(slug, config:, target: nil, force: false)
-        @slug = slug
+      def initialize(slug_filter = nil, config:, target: nil, force: false)
+        @slug_filter = slug_filter
         @target_filter = target
         @force = force
         @config = config
@@ -17,40 +17,77 @@ module Lowmu
       end
 
       def call
-        raise Error, "Slug not found: #{@slug}" unless @store.slug_exists?(@slug)
-
         configure_llm
-        resolve_targets.map { |target_name| generate_target(target_name) }
+        items = HugoScanner.new(@config.hugo_content_dir).scan
+        items = items.select { |item| item[:slug] == @slug_filter } if @slug_filter
+        warn_stale(items)
+        items.select { |item| should_generate?(item) }
+          .flat_map { |item| generate_slug(item) }
       end
 
       private
 
-      def generate_target(target_name)
-        target_config = @config.target_config(target_name)
-        current_status = @store.read_status(@slug).dig(target_name, "status")
+      def should_generate?(item)
+        status = slug_status(item)
+        return true if @force
+        if @slug_filter
+          status == :pending || status == :stale
+        else
+          status == :pending
+        end
+      end
 
-        if current_status == "generated" && !@force
-          raise Error, "Target '#{target_name}' already generated. Use --force to regenerate."
+      def warn_stale(items)
+        items.each do |item|
+          next unless slug_status(item) == :stale
+          next if should_generate?(item)
+          warn "Warning: '#{item[:slug]}' is stale. Run `lowmu generate #{item[:slug]}` to regenerate."
+        end
+      end
+
+      def slug_status(item)
+        @status_cache ||= {}
+        @status_cache[item[:slug]] ||= SlugStatus.new(item[:slug], item[:source_path], @store).call
+      end
+
+      def generate_slug(item)
+        @store.ensure_slug_dir(item[:slug])
+        targets_generated = {}
+
+        results = resolve_targets.map do |target_name|
+          target_config = @config.target_config(target_name)
+          generator_class = GENERATOR_MAP.fetch(target_config["type"]) do
+            raise Error, "Unknown target type: #{target_config["type"]}"
+          end
+
+          output_file = generator_class.new(
+            @store.slug_dir(item[:slug]),
+            item[:source_path],
+            target_config,
+            @config.llm
+          ).generate
+
+          targets_generated[target_name] = {"file" => output_file}
+          {slug: item[:slug], target: target_name, file: output_file}
         end
 
-        generator_class = GENERATOR_MAP.fetch(target_config["type"]) do
-          raise Error, "Unknown target type: #{target_config["type"]}"
-        end
+        @store.write_status(item[:slug], {
+          "source_path" => item[:source_path],
+          "generated_at" => Time.now.utc.iso8601,
+          "targets" => targets_generated
+        })
 
-        output_file = generator_class.new(@store.slug_dir(@slug), target_config, @config.llm).generate
-        @store.update_target_status(@slug, target_name, {"status" => "generated", "file" => output_file})
-
-        {target: target_name, file: output_file}
+        results
       end
 
       def resolve_targets
-        all_targets = @store.read_status(@slug).keys
-
         if @target_filter
-          raise Error, "Target '#{@target_filter}' not in publish_to list" unless all_targets.include?(@target_filter)
+          unless @config.targets.any? { |t| t["name"] == @target_filter }
+            raise Error, "Unknown target: #{@target_filter}"
+          end
           [@target_filter]
         else
-          all_targets
+          @config.targets.map { |t| t["name"] }
         end
       end
 

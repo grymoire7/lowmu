@@ -14,7 +14,7 @@ module Lowmu
     end
 
     def slug_dir(slug)
-      File.join(base_dir, slug)
+      File.join(base_dir, "generated", slug)
     end
 
     def slug_exists?(slug)
@@ -35,7 +35,9 @@ module Lowmu
     end
 
     def write_status(slug, status)
-      File.write(File.join(slug_dir(slug), STATUS_FILE), status.to_yaml)
+      dir = slug_dir(slug)
+      FileUtils.mkdir_p(dir)
+      File.write(File.join(dir, STATUS_FILE), status.to_yaml)
     end
 
     def read_status(slug)
@@ -52,14 +54,16 @@ module Lowmu
 
     def update_target_status(slug, target_name, status_attrs)
       current = read_status(slug)
-      current[target_name] ||= {}
-      current[target_name].merge!(status_attrs)
+      current["targets"] ||= {}
+      current["targets"][target_name] ||= {}
+      current["targets"][target_name].merge!(status_attrs)
       write_status(slug, current)
     end
 
     def slugs
-      return [] unless Dir.exist?(base_dir)
-      Dir.children(base_dir).select { |f| Dir.exist?(File.join(base_dir, f)) }.sort
+      generated_dir = File.join(base_dir, "generated")
+      return [] unless Dir.exist?(generated_dir)
+      Dir.children(generated_dir).select { |f| Dir.exist?(File.join(generated_dir, f)) }.sort
     end
 
     def original_content_path(slug)
