@@ -114,9 +114,29 @@ what has and hasn't been generated yet.
    or only when status is `pending`? `--force` flag handles the explicit case, but
    automatic change detection could be useful.
 
+   [User feedback: let's say we fetch statuses from a Status helper class. If
+   the helper notices stale content (source has changed since last generation),
+   we would update the status to :stale. The generate command would then warn
+   the user about stale generated content and suggest regenerating with either
+   `--force` or a specific `lowmu generate SLUG` command. The 'status' command
+   would use the same Status helper to show which content is pending,
+   generated, or stale.]
+
 2. How does `lowmu generate` handle slugs? Options:
    - Derive slug from filename (current behavior via `ContentStore.slug_from_path`)
    - Use a front-matter `slug` field if present, fall back to filename
 
+   [User feedback: Note that for Hugo, the file name is often 'index.md' within
+   a directory named after the slug. So we might want to derive the slug from
+   the parent directory name rather than the file name itself *IF* the name is
+   'index.md'.  I'm okay with allowing a `slug` in the front matter to override
+   that. I believe Hugo itself uses the same logic, with `slug` front matter
+   taking precedence over file/directory name.]
+
 3. Should `lowmu status` show a diff/summary of what needs generating, like a
    `git status` style output?
+
+   [User feedback: No, not for `lowmu status`, just a list of slugs with
+   their status (pending, generated, stale). If the effort is modest it would
+   be a nice-to-have feature for `lowmu status SLUG`.]
+   
