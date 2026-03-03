@@ -1,5 +1,9 @@
 module Lowmu
   class CLI < Thor
+    def self.exit_on_failure?
+      true
+    end
+
     desc "configure", "Create or update the configuration file"
     def configure
       result = Commands::Configure.new.call
