@@ -98,4 +98,30 @@ RSpec.describe Lowmu::ContentStore do
       expect(store.slugs).to eq([])
     end
   end
+
+  describe "#ensure_slug_dir" do
+    it "creates the slug directory" do
+      store.ensure_slug_dir("my-post")
+      expect(Dir.exist?(File.join(base_dir, "my-post"))).to be true
+    end
+
+    it "is idempotent (does not raise if dir exists)" do
+      store.ensure_slug_dir("my-post")
+      expect { store.ensure_slug_dir("my-post") }.not_to raise_error
+    end
+  end
+
+  describe "#generated_at" do
+    before { FileUtils.mkdir_p(File.join(base_dir, "my-post")) }
+
+    it "returns nil when no status.yml exists" do
+      expect(store.generated_at("my-post")).to be_nil
+    end
+
+    it "returns a Time object from the stored iso8601 string" do
+      t = Time.now.utc
+      store.write_status("my-post", {"generated_at" => t.iso8601})
+      expect(store.generated_at("my-post")).to be_within(1).of(t)
+    end
+  end
 end

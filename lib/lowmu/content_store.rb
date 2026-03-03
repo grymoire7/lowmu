@@ -21,6 +21,10 @@ module Lowmu
       Dir.exist?(slug_dir(slug))
     end
 
+    def ensure_slug_dir(slug)
+      FileUtils.mkdir_p(slug_dir(slug))
+    end
+
     def create_slug(slug, md_path, image_path)
       raise Error, "Slug already exists: #{slug}" if slug_exists?(slug)
       dir = slug_dir(slug)
@@ -39,6 +43,11 @@ module Lowmu
       YAML.safe_load_file(path) || {}
     rescue Errno::ENOENT
       {}
+    end
+
+    def generated_at(slug)
+      val = read_status(slug)["generated_at"]
+      val ? Time.iso8601(val.to_s) : nil
     end
 
     def update_target_status(slug, target_name, status_attrs)
