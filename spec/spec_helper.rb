@@ -16,6 +16,7 @@ VCR.configure do |config|
   config.filter_sensitive_data("<LOWMU_MASTODON_ACCESS_TOKEN>") { ENV["LOWMU_MASTODON_ACCESS_TOKEN"] }
 end
 
+require "tmpdir"
 require "lowmu"
 
 Dir[File.join(__dir__, "support/**/*.rb")].each { |f| require f }
