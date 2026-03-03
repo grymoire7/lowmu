@@ -4,7 +4,7 @@ module Lowmu
       OUTPUT_FILE = "mastodon.txt"
       MAX_CHARS = 500
 
-      PROMPT = <<~PROMPT
+      POST_PROMPT = <<~PROMPT
         Write a Mastodon post announcing the following blog post. Requirements:
         - Must be under %d characters total (including the [URL] placeholder)
         - Capture the key insight or hook from the post
@@ -18,8 +18,37 @@ module Lowmu
         Return only the Mastodon post text.
       PROMPT
 
+      NOTE_PROMPT = <<~PROMPT
+        Condense the following note for Mastodon. Requirements:
+        - Must be under %d characters total
+        - Preserve the key point of the note
+        - Maintain the author's voice and tone
+        - Include 2-3 relevant hashtags at the end
+
+        Note:
+        %s
+
+        Return only the Mastodon post text.
+      PROMPT
+
       def generate
-        content = ask_llm(PROMPT % [MAX_CHARS, original_content])
+        loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
+        parsed = FrontMatterParser::Parser.new(:md, loader: loader).call(original_content)
+        input_type = parsed.front_matter.fetch("type", "post")
+        body = parsed.content.strip
+
+        content = if input_type == "note" && body.length <= MAX_CHARS
+          body
+        elsif input_type == "note"
+          ask_llm(NOTE_PROMPT % [MAX_CHARS, body])
+        else
+          ask_llm(POST_PROMPT % [MAX_CHARS, original_content])
+        end
+
+        if content.length > MAX_CHARS
+          content += "\n\n<!-- lowmu: content is #{content.length} chars, target is #{MAX_CHARS} chars. Please shorten before publishing. -->"
+        end
+
         write_output(OUTPUT_FILE, content)
         OUTPUT_FILE
       end
