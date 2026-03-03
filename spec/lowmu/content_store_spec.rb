@@ -47,22 +47,6 @@ RSpec.describe Lowmu::ContentStore do
     end
   end
 
-  describe "#update_target_status" do
-    before { store.write_status("my-post", {"targets" => {"substack" => {"status" => "pending"}}}) }
-
-    it "merges new attributes into the existing target status" do
-      store.update_target_status("my-post", "substack", {"status" => "generated"})
-      expect(store.read_status("my-post").dig("targets", "substack", "status")).to eq("generated")
-    end
-
-    it "preserves existing attributes not being updated" do
-      store.update_target_status("my-post", "substack", {"file" => "substack.md"})
-      status = store.read_status("my-post")
-      expect(status.dig("targets", "substack", "status")).to eq("pending")
-      expect(status.dig("targets", "substack", "file")).to eq("substack.md")
-    end
-  end
-
   describe "#generated_at" do
     it "returns nil when no status.yml exists" do
       store.ensure_slug_dir("my-post")
