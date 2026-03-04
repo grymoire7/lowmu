@@ -13,42 +13,76 @@ RSpec.describe Lowmu::HugoScanner do
     full
   end
 
+  def scanner
+    described_class.new(hugo_dir, post_dirs: ["posts"], note_dirs: ["notes"])
+  end
+
   describe "#scan" do
     it "derives slug from parent directory name for index.md files" do
       write_md("posts/my-post/index.md", title: "My Post")
-      result = described_class.new(hugo_dir).scan
-      expect(result.map { |r| r[:slug] }).to include("my-post")
+      expect(scanner.scan.map { |r| r[:slug] }).to include("my-post")
     end
 
     it "derives slug from filename for non-index files" do
       write_md("notes/quick-tip.md", title: "Quick Tip")
-      result = described_class.new(hugo_dir).scan
-      expect(result.map { |r| r[:slug] }).to include("quick-tip")
+      expect(scanner.scan.map { |r| r[:slug] }).to include("quick-tip")
     end
 
     it "uses front matter slug when present" do
       write_md("posts/long-dirname/index.md", title: "Post", slug: "custom")
-      result = described_class.new(hugo_dir).scan
-      expect(result.map { |r| r[:slug] }).to include("custom")
-      expect(result.map { |r| r[:slug] }).not_to include("long-dirname")
+      slugs = scanner.scan.map { |r| r[:slug] }
+      expect(slugs).to include("custom")
+      expect(slugs).not_to include("long-dirname")
     end
 
     it "includes the full source_path for each entry" do
       write_md("posts/my-post/index.md")
-      result = described_class.new(hugo_dir).scan
-      expect(result.first[:source_path]).to eq(File.join(hugo_dir, "posts/my-post/index.md"))
+      result = scanner.scan.first
+      expect(result[:source_path]).to eq(File.join(hugo_dir, "posts/my-post/index.md"))
     end
 
-    it "returns all discovered markdown files" do
+    it "tags items from post_dirs with content_type :post" do
+      write_md("posts/my-post/index.md")
+      result = scanner.scan.first
+      expect(result[:content_type]).to eq(:post)
+    end
+
+    it "tags items from note_dirs with content_type :note" do
+      write_md("notes/quick-tip.md")
+      result = scanner.scan.first
+      expect(result[:content_type]).to eq(:note)
+    end
+
+    it "sets section to the directory name" do
+      write_md("posts/my-post/index.md")
+      result = scanner.scan.first
+      expect(result[:section]).to eq("posts")
+    end
+
+    it "sets key to section/slug" do
+      write_md("posts/my-post/index.md")
+      result = scanner.scan.first
+      expect(result[:key]).to eq("posts/my-post")
+    end
+
+    it "excludes directories not in post_dirs or note_dirs" do
+      write_md("posts/post-a/index.md")
+      write_md("portfolio/jojo/index.md")
+      write_md("about/me.md")
+      results = scanner.scan
+      expect(results.length).to eq(1)
+      expect(results.first[:slug]).to eq("post-a")
+    end
+
+    it "scans both post_dirs and note_dirs" do
       write_md("posts/post-a/index.md")
       write_md("posts/post-b/index.md")
       write_md("notes/note-a.md")
-      result = described_class.new(hugo_dir).scan
-      expect(result.length).to eq(3)
+      expect(scanner.scan.length).to eq(3)
     end
 
-    it "returns empty array when hugo_content_dir has no markdown files" do
-      expect(described_class.new(hugo_dir).scan).to eq([])
+    it "returns empty array when hugo_content_dir has no matching markdown files" do
+      expect(scanner.scan).to eq([])
     end
   end
 end
