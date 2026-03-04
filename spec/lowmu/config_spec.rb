@@ -62,6 +62,30 @@ RSpec.describe Lowmu::Config do
     end
   end
 
+  describe "#post_dirs" do
+    it "defaults to ['posts']" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo"})
+      expect(config.post_dirs).to eq(["posts"])
+    end
+
+    it "returns configured value" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "post_dirs" => ["posts", "articles"]})
+      expect(config.post_dirs).to eq(["posts", "articles"])
+    end
+  end
+
+  describe "#note_dirs" do
+    it "defaults to ['notes']" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo"})
+      expect(config.note_dirs).to eq(["notes"])
+    end
+
+    it "returns configured value" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "note_dirs" => ["notes", "microblog"]})
+      expect(config.note_dirs).to eq(["notes", "microblog"])
+    end
+  end
+
   describe "validation" do
     it "raises when hugo_content_dir is missing" do
       expect { described_class.new({}) }
