@@ -31,6 +31,7 @@
 /.claude/settings.local.json
 
 # lowmu-specific
+.lowmu/
 content/
 
 # Git worktrees
