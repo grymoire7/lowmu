@@ -44,7 +44,7 @@ RSpec.describe Lowmu::Config do
   describe "#targets" do
     it "returns all configured targets" do
       config = described_class.load(fixture_path)
-      expect(config.targets.length).to eq(4)
+      expect(config.targets.length).to eq(5)
     end
   end
 
