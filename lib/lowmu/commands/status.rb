@@ -1,19 +1,23 @@
 module Lowmu
   module Commands
     class Status
-      def initialize(slug = nil, config:)
-        @slug_filter = slug
+      def initialize(key = nil, config:)
+        @key_filter = key
         @config = config
         @store = ContentStore.new(config.content_dir)
       end
 
       def call
-        items = HugoScanner.new(@config.hugo_content_dir).scan
-        items = items.select { |item| item[:slug] == @slug_filter } if @slug_filter
+        items = HugoScanner.new(
+          @config.hugo_content_dir,
+          post_dirs: @config.post_dirs,
+          note_dirs: @config.note_dirs
+        ).scan
+        items = items.select { |item| item[:key] == @key_filter } if @key_filter
 
         items.map do |item|
-          status = SlugStatus.new(item[:slug], item[:source_path], @store).call
-          {slug: item[:slug], status: status}
+          status = SlugStatus.new(item[:key], item[:source_path], @store).call
+          {key: item[:key], status: status}
         end
       end
     end
