@@ -2,7 +2,6 @@ module Lowmu
   module Commands
     class Generate
       GENERATOR_MAP = {
-        "hugo" => Generators::Hugo,
         "substack" => Generators::Substack,
         "mastodon" => Generators::Mastodon,
         "linkedin" => Generators::Linkedin

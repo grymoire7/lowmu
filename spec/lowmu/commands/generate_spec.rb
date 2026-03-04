@@ -8,7 +8,6 @@ RSpec.describe Lowmu::Commands::Generate do
   let(:store) { Lowmu::ContentStore.new(content_dir) }
 
   let(:mastodon_target) { {"name" => "mastodon", "type" => "mastodon"} }
-  let(:hugo_target) { {"name" => "tracyatteberry", "type" => "hugo", "base_path" => "/tmp"} }
   let(:llm_config) { {"model" => "claude-opus-4-6"} }
 
   let(:config) do
@@ -16,14 +15,13 @@ RSpec.describe Lowmu::Commands::Generate do
       hugo_content_dir: hugo_content_dir,
       content_dir: content_dir,
       llm: llm_config,
-      targets: [mastodon_target, hugo_target])
+      targets: [mastodon_target])
   end
 
   before do
     FileUtils.mkdir_p(post_dir)
     FileUtils.cp("spec/fixtures/sample_post.md", source_path)
     allow(config).to receive(:target_config).with("mastodon").and_return(mastodon_target)
-    allow(config).to receive(:target_config).with("tracyatteberry").and_return(hugo_target)
   end
 
   after do
@@ -56,7 +54,7 @@ RSpec.describe Lowmu::Commands::Generate do
       it "generates content for all configured targets" do
         mock_llm_response(content: "Mastodon post #ruby [URL]")
         results = described_class.new(config: config).call
-        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "tracyatteberry")
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon")
       end
 
       it "includes the slug in each result" do
@@ -130,8 +128,9 @@ RSpec.describe Lowmu::Commands::Generate do
 
     context "with --target filter" do
       it "generates only the specified target" do
-        results = described_class.new(target: "tracyatteberry", config: config).call
-        expect(results.map { |r| r[:target] }).to contain_exactly("tracyatteberry")
+        mock_llm_response(content: "post")
+        results = described_class.new(target: "mastodon", config: config).call
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon")
       end
 
       it "raises for an unknown target" do
