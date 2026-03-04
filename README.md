@@ -8,7 +8,7 @@ which represents the coefficient of friction in physics.
 
 ## What it does
 
-```
+```mermaid
 flowchart LR
 A[Hugo post] --> L(lowmu generate)
 L --> B[Substack newsletter]
