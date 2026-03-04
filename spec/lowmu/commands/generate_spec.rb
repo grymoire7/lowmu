@@ -31,11 +31,24 @@ RSpec.describe Lowmu::Commands::Generate do
     FileUtils.rm_rf(content_dir)
   end
 
-  def mark_generated(generated_at:)
-    store.write_status("my-post", {
-      "source_path" => source_path,
-      "generated_at" => generated_at.utc.iso8601
-    })
+  def mark_generated
+    store.ensure_slug_dir("my-post")
+    output = File.join(store.slug_dir("my-post"), "hugo.md")
+    File.write(output, "generated content")
+    past = Time.now - 60
+    File.utime(past, past, source_path)
+  end
+
+  def mark_stale
+    store.ensure_slug_dir("my-post")
+    output = File.join(store.slug_dir("my-post"), "hugo.md")
+    File.write(output, "generated content")
+    past = Time.now - 60
+    File.utime(past, past, output)
+  end
+
+  def mark_ignored(slug)
+    File.write(File.join(content_dir, "ignore.yml"), [slug].to_yaml)
   end
 
   describe "#call" do
@@ -57,16 +70,10 @@ RSpec.describe Lowmu::Commands::Generate do
         described_class.new(config: config).call
         expect(Dir.exist?(store.slug_dir("my-post"))).to be true
       end
-
-      it "writes generated_at to status" do
-        mock_llm_response(content: "post")
-        described_class.new(config: config).call
-        expect(store.read_status("my-post")["generated_at"]).not_to be_nil
-      end
     end
 
     context "with an already-generated (non-stale) slug" do
-      before { mark_generated(generated_at: Time.now + 60) }
+      before { mark_generated }
 
       it "skips it" do
         results = described_class.new(config: config).call
@@ -81,7 +88,7 @@ RSpec.describe Lowmu::Commands::Generate do
     end
 
     context "with a stale slug" do
-      before { mark_generated(generated_at: Time.now - 60) }
+      before { mark_stale }
 
       it "does not generate without explicit slug or --force" do
         results = nil
@@ -104,6 +111,20 @@ RSpec.describe Lowmu::Commands::Generate do
         mock_llm_response(content: "post")
         results = described_class.new(config: config, force: true).call
         expect(results).not_to be_empty
+      end
+    end
+
+    context "with an ignored slug" do
+      before { mark_ignored("my-post") }
+
+      it "skips it" do
+        results = described_class.new(config: config).call
+        expect(results).to be_empty
+      end
+
+      it "skips it even with --force" do
+        results = described_class.new(config: config, force: true).call
+        expect(results).to be_empty
       end
     end
 

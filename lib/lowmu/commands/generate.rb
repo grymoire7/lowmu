@@ -29,6 +29,7 @@ module Lowmu
 
       def should_generate?(item)
         status = slug_status(item)
+        return false if status == :ignore
         return true if @force
         if @slug_filter
           status == :pending || status == :stale
@@ -52,9 +53,8 @@ module Lowmu
 
       def generate_slug(item)
         @store.ensure_slug_dir(item[:slug])
-        targets_generated = {}
 
-        results = resolve_targets.map do |target_name|
+        resolve_targets.map do |target_name|
           target_config = @config.target_config(target_name)
           generator_class = GENERATOR_MAP.fetch(target_config["type"]) do
             raise Error, "Unknown target type: #{target_config["type"]}"
@@ -67,17 +67,8 @@ module Lowmu
             @config.llm
           ).generate
 
-          targets_generated[target_name] = {"file" => output_file}
           {slug: item[:slug], target: target_name, file: output_file}
         end
-
-        @store.write_status(item[:slug], {
-          "source_path" => item[:source_path],
-          "generated_at" => Time.now.utc.iso8601,
-          "targets" => targets_generated
-        })
-
-        results
       end
 
       def resolve_targets
