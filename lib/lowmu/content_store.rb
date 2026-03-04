@@ -1,6 +1,6 @@
 module Lowmu
   class ContentStore
-    STATUS_FILE = "status.yml"
+    IGNORE_FILE = "ignore.yml"
 
     attr_reader :base_dir
 
@@ -20,22 +20,10 @@ module Lowmu
       FileUtils.mkdir_p(slug_dir(slug))
     end
 
-    def write_status(slug, status)
-      dir = slug_dir(slug)
-      FileUtils.mkdir_p(dir)
-      File.write(File.join(dir, STATUS_FILE), status.to_yaml)
-    end
-
-    def read_status(slug)
-      path = File.join(slug_dir(slug), STATUS_FILE)
-      YAML.safe_load_file(path) || {}
-    rescue Errno::ENOENT
-      {}
-    end
-
-    def generated_at(slug)
-      val = read_status(slug)["generated_at"]
-      val ? Time.iso8601(val.to_s) : nil
+    def ignore_slugs
+      path = File.join(base_dir, IGNORE_FILE)
+      return [] unless File.exist?(path)
+      YAML.safe_load_file(path) || []
     end
 
     def slugs
