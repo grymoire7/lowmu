@@ -11,6 +11,10 @@ RSpec.describe Lowmu::Generators::Mastodon do
     described_class.new(slug_dir, source, content_type, target_config, llm_config)
   end
 
+  it "has FORM :short" do
+    expect(described_class::FORM).to eq(:short)
+  end
+
   describe "#generate" do
     context "with type: post" do
       let(:source_path) { "spec/fixtures/sample_post.md" }

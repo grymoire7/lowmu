@@ -1,6 +1,7 @@
 module Lowmu
   module Generators
     class Mastodon < Base
+      FORM = :short
       OUTPUT_FILE = "mastodon.txt"
       MAX_CHARS = 500
 
@@ -32,15 +33,11 @@ module Lowmu
       PROMPT
 
       def generate
-        loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
-        parsed = FrontMatterParser::Parser.new(:md, loader: loader).call(original_content)
-        input_type = parsed.front_matter.fetch("type", "post")
-        body = parsed.content.strip
-
-        content = if input_type == "note" && body.length <= MAX_CHARS
-          body
-        elsif input_type == "note"
-          ask_llm(NOTE_PROMPT % [MAX_CHARS, body])
+        content = if @content_type == :note
+          loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
+          parsed = FrontMatterParser::Parser.new(:md, loader: loader).call(original_content)
+          body = parsed.content.strip
+          (body.length <= MAX_CHARS) ? body : ask_llm(NOTE_PROMPT % [MAX_CHARS, body])
         else
           ask_llm(POST_PROMPT % [MAX_CHARS, original_content])
         end
