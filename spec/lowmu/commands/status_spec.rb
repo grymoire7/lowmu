@@ -11,13 +11,14 @@ RSpec.describe Lowmu::Commands::Status do
       content_dir: content_dir)
   end
 
+  let(:source_a) { File.join(hugo_content_dir, "posts", "post-a", "index.md") }
+  let(:source_b) { File.join(hugo_content_dir, "notes", "post-b.md") }
+
   before do
     FileUtils.mkdir_p(File.join(hugo_content_dir, "posts", "post-a"))
-    File.write(File.join(hugo_content_dir, "posts", "post-a", "index.md"),
-      "---\ntitle: Post A\n---\nContent.")
+    File.write(source_a, "---\ntitle: Post A\n---\nContent.")
     FileUtils.mkdir_p(File.join(hugo_content_dir, "notes"))
-    File.write(File.join(hugo_content_dir, "notes", "post-b.md"),
-      "---\ntitle: Post B\n---\nContent.")
+    File.write(source_b, "---\ntitle: Post B\n---\nContent.")
   end
 
   after do
@@ -48,11 +49,11 @@ RSpec.describe Lowmu::Commands::Status do
 
     context "with a generated slug" do
       before do
-        source = File.join(hugo_content_dir, "posts", "post-a", "index.md")
-        store.write_status("post-a", {
-          "source_path" => source,
-          "generated_at" => (Time.now + 60).utc.iso8601
-        })
+        store.ensure_slug_dir("post-a")
+        output = File.join(store.slug_dir("post-a"), "hugo.md")
+        File.write(output, "generated content")
+        past = Time.now - 60
+        File.utime(past, past, source_a)
       end
 
       it "returns :generated status" do
@@ -63,16 +64,27 @@ RSpec.describe Lowmu::Commands::Status do
 
     context "with a stale slug" do
       before do
-        source = File.join(hugo_content_dir, "posts", "post-a", "index.md")
-        store.write_status("post-a", {
-          "source_path" => source,
-          "generated_at" => (Time.now - 60).utc.iso8601
-        })
+        store.ensure_slug_dir("post-a")
+        output = File.join(store.slug_dir("post-a"), "hugo.md")
+        File.write(output, "generated content")
+        past = Time.now - 60
+        File.utime(past, past, output)
       end
 
       it "returns :stale status" do
         results = described_class.new("post-a", config: config).call
         expect(results.first[:status]).to eq(:stale)
+      end
+    end
+
+    context "with an ignored slug" do
+      before do
+        File.write(File.join(content_dir, "ignore.yml"), ["post-a"].to_yaml)
+      end
+
+      it "returns :ignore status" do
+        results = described_class.new("post-a", config: config).call
+        expect(results.first[:status]).to eq(:ignore)
       end
     end
   end
