@@ -14,18 +14,29 @@ RSpec.describe Lowmu::SlugStatus do
   after { FileUtils.rm_rf(content_dir) }
 
   describe "#call" do
-    context "when no status.yml exists" do
+    context "when slug is in the ignore list" do
+      before do
+        File.write(File.join(content_dir, "ignore.yml"), ["my-post"].to_yaml)
+      end
+
+      it "returns :ignore" do
+        expect(slug_status.call).to eq(:ignore)
+      end
+    end
+
+    context "when no generated files exist" do
       it "returns :pending" do
         expect(slug_status.call).to eq(:pending)
       end
     end
 
-    context "when generated_at is in the future (source is older)" do
+    context "when generated files exist and source is older than output" do
       before do
         store.ensure_slug_dir("my-post")
-        store.write_status("my-post", {
-          "generated_at" => (Time.now + 60).utc.iso8601
-        })
+        output = File.join(store.slug_dir("my-post"), "hugo.md")
+        File.write(output, "generated content")
+        past = Time.now - 60
+        File.utime(past, past, source_file)
       end
 
       it "returns :generated" do
@@ -33,12 +44,13 @@ RSpec.describe Lowmu::SlugStatus do
       end
     end
 
-    context "when generated_at is in the past (source is newer)" do
+    context "when generated files exist but source is newer than output" do
       before do
         store.ensure_slug_dir("my-post")
-        store.write_status("my-post", {
-          "generated_at" => (Time.now - 60).utc.iso8601
-        })
+        output = File.join(store.slug_dir("my-post"), "hugo.md")
+        File.write(output, "generated content")
+        past = Time.now - 60
+        File.utime(past, past, output)
       end
 
       it "returns :stale" do

@@ -7,10 +7,16 @@ module Lowmu
     end
 
     def call
-      gen_at = @content_store.generated_at(@slug)
-      return :pending unless gen_at
+      return :ignore if @content_store.ignore_slugs.include?(@slug)
 
-      (File.mtime(@source_path) > gen_at) ? :stale : :generated
+      slug_dir = @content_store.slug_dir(@slug)
+      return :pending unless Dir.exist?(slug_dir)
+
+      files = Dir.children(slug_dir).map { |f| File.join(slug_dir, f) }.select { |f| File.file?(f) }
+      return :pending if files.empty?
+
+      oldest_generated = files.map { |f| File.mtime(f) }.min
+      (File.mtime(@source_path) > oldest_generated) ? :stale : :generated
     end
   end
 end
