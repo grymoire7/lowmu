@@ -9,8 +9,8 @@ module Lowmu
         "linkedin_article" => Generators::LinkedinArticle
       }.freeze
 
-      def initialize(slug_filter = nil, config:, target: nil, force: false)
-        @slug_filter = slug_filter
+      def initialize(key_filter = nil, config:, target: nil, force: false)
+        @key_filter = key_filter
         @target_filter = target
         @force = force
         @config = config
@@ -19,20 +19,24 @@ module Lowmu
 
       def call
         configure_llm
-        items = HugoScanner.new(@config.hugo_content_dir).scan
-        items = items.select { |item| item[:slug] == @slug_filter } if @slug_filter
+        items = HugoScanner.new(
+          @config.hugo_content_dir,
+          post_dirs: @config.post_dirs,
+          note_dirs: @config.note_dirs
+        ).scan
+        items = items.select { |item| item[:key] == @key_filter } if @key_filter
         warn_stale(items)
         items.select { |item| should_generate?(item) }
-          .flat_map { |item| generate_slug(item) }
+          .flat_map { |item| generate_item(item) }
       end
 
       private
 
       def should_generate?(item)
-        status = slug_status(item)
+        status = item_status(item)
         return false if status == :ignore
         return true if @force
-        if @slug_filter
+        if @key_filter
           status == :pending || status == :stale
         else
           status == :pending
@@ -41,35 +45,46 @@ module Lowmu
 
       def warn_stale(items)
         items.each do |item|
-          next unless slug_status(item) == :stale
+          next unless item_status(item) == :stale
           next if should_generate?(item)
-          warn "Warning: '#{item[:slug]}' is stale. Run `lowmu generate #{item[:slug]}` to regenerate."
+          warn "Warning: '#{item[:key]}' is stale. Run `lowmu generate #{item[:key]}` to regenerate."
         end
       end
 
-      def slug_status(item)
+      def item_status(item)
         @status_cache ||= {}
-        @status_cache[item[:slug]] ||= SlugStatus.new(item[:slug], item[:source_path], @store).call
+        @status_cache[item[:key]] ||= SlugStatus.new(item[:key], item[:source_path], @store).call
       end
 
-      def generate_slug(item)
-        @store.ensure_slug_dir(item[:slug])
+      def generate_item(item)
+        @store.ensure_slug_dir(item[:key])
 
-        resolve_targets.map do |target_name|
+        applicable_targets(item[:content_type]).map do |target_name|
           target_config = @config.target_config(target_name)
-          generator_class = GENERATOR_MAP.fetch(target_config["type"]) do
-            raise Error, "Unknown target type: #{target_config["type"]}"
-          end
+          generator_class = generator_class_for(target_name)
 
           output_file = generator_class.new(
-            @store.slug_dir(item[:slug]),
+            @store.slug_dir(item[:key]),
             item[:source_path],
-            item.fetch(:content_type, :post),
+            item[:content_type],
             target_config,
             @config.llm
           ).generate
 
-          {slug: item[:slug], target: target_name, file: output_file}
+          {key: item[:key], target: target_name, file: output_file}
+        end
+      end
+
+      def applicable_targets(content_type)
+        resolve_targets.reject do |target_name|
+          content_type == :note && generator_class_for(target_name)::FORM == :long
+        end
+      end
+
+      def generator_class_for(target_name)
+        target_config = @config.target_config(target_name)
+        GENERATOR_MAP.fetch(target_config["type"]) do
+          raise Error, "Unknown target type: #{target_config["type"]}"
         end
       end
 
