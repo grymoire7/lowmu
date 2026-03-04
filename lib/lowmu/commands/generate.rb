@@ -2,7 +2,8 @@ module Lowmu
   module Commands
     class Generate
       GENERATOR_MAP = {
-        "substack" => Generators::Substack,
+        "substack_newsletter" => Generators::SubstackNewsletter,
+        "substack_note" => Generators::SubstackNote,
         "mastodon" => Generators::Mastodon,
         "linkedin" => Generators::Linkedin
       }.freeze
