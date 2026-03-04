@@ -10,7 +10,7 @@ RSpec.describe Lowmu::Generators::Hugo do
 
   describe "#generate" do
     subject(:output_file) do
-      described_class.new(slug_dir, source_path, target_config, llm_config).generate
+      described_class.new(slug_dir, source_path, :post, target_config, llm_config).generate
     end
 
     it "returns the output filename" do

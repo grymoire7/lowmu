@@ -7,8 +7,8 @@ RSpec.describe Lowmu::Generators::Mastodon do
 
   after { FileUtils.rm_rf(slug_dir) }
 
-  def generator(source)
-    described_class.new(slug_dir, source, target_config, llm_config)
+  def generator(source, content_type = :post)
+    described_class.new(slug_dir, source, content_type, target_config, llm_config)
   end
 
   describe "#generate" do
@@ -44,12 +44,12 @@ RSpec.describe Lowmu::Generators::Mastodon do
 
       it "does not call the LLM" do
         allow(RubyLLM).to receive(:chat)
-        generator(source_path).generate
+        generator(source_path, :note).generate
         expect(RubyLLM).not_to have_received(:chat)
       end
 
       it "writes the note body (without front matter) to mastodon.txt" do
-        generator(source_path).generate
+        generator(source_path, :note).generate
         content = File.read(File.join(slug_dir, "mastodon.txt"))
         expect(content).to include("Comparable module")
         expect(content).not_to include("---")
@@ -67,7 +67,7 @@ RSpec.describe Lowmu::Generators::Mastodon do
 
       it "calls the LLM to condense the note" do
         mock_chat = mock_llm_response(content: "Condensed note #ruby [URL]")
-        generator(source_path).generate
+        generator(source_path, :note).generate
         expect(mock_chat).to have_received(:ask)
       end
     end

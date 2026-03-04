@@ -63,6 +63,7 @@ module Lowmu
           output_file = generator_class.new(
             @store.slug_dir(item[:slug]),
             item[:source_path],
+            item.fetch(:content_type, :post),
             target_config,
             @config.llm
           ).generate

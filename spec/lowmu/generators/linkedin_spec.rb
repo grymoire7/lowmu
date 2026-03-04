@@ -14,18 +14,18 @@ RSpec.describe Lowmu::Generators::Linkedin do
     end
 
     it "returns the output filename" do
-      result = described_class.new(slug_dir, source_path, target_config, llm_config).generate
+      result = described_class.new(slug_dir, source_path, :post, target_config, llm_config).generate
       expect(result).to eq("linkedin.md")
     end
 
     it "creates linkedin.md in the slug directory" do
-      described_class.new(slug_dir, source_path, target_config, llm_config).generate
+      described_class.new(slug_dir, source_path, :post, target_config, llm_config).generate
       expect(File.exist?(File.join(slug_dir, "linkedin.md"))).to be true
     end
 
     it "sends a prompt mentioning LinkedIn" do
       mock_chat = mock_llm_response(content: "LinkedIn post")
-      described_class.new(slug_dir, source_path, target_config, llm_config).generate
+      described_class.new(slug_dir, source_path, :post, target_config, llm_config).generate
       expect(mock_chat).to have_received(:ask).with(including("LinkedIn"))
     end
   end

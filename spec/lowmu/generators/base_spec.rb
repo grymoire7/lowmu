@@ -8,7 +8,7 @@ RSpec.describe Lowmu::Generators::Base do
 
   describe "#ask_llm (private)" do
     context "when llm_config has no model key" do
-      subject(:generator) { described_class.new(slug_dir, source_path, {}, {}) }
+      subject(:generator) { described_class.new(slug_dir, source_path, :post, {}, {}) }
 
       it "raises a helpful error" do
         expect { generator.send(:ask_llm, "test prompt") }
@@ -17,7 +17,7 @@ RSpec.describe Lowmu::Generators::Base do
     end
 
     context "when llm_config has a model key" do
-      subject(:generator) { described_class.new(slug_dir, source_path, {}, {"model" => "claude-opus-4-6"}) }
+      subject(:generator) { described_class.new(slug_dir, source_path, :post, {}, {"model" => "claude-opus-4-6"}) }
 
       it "calls RubyLLM with the configured model" do
         mock_llm_response(content: "response")

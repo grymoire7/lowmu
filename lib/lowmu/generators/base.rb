@@ -1,9 +1,10 @@
 module Lowmu
   module Generators
     class Base
-      def initialize(slug_dir, source_path, target_config, llm_config)
+      def initialize(slug_dir, source_path, content_type, target_config, llm_config)
         @slug_dir = slug_dir
         @source_path = source_path
+        @content_type = content_type
         @target_config = target_config
         @llm_config = llm_config
       end
