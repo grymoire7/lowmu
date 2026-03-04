@@ -5,7 +5,8 @@ module Lowmu
         "substack_newsletter" => Generators::SubstackNewsletter,
         "substack_note" => Generators::SubstackNote,
         "mastodon" => Generators::Mastodon,
-        "linkedin" => Generators::Linkedin
+        "linkedin_post" => Generators::LinkedinPost,
+        "linkedin_article" => Generators::LinkedinArticle
       }.freeze
 
       def initialize(slug_filter = nil, config:, target: nil, force: false)
