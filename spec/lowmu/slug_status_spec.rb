@@ -9,14 +9,14 @@ RSpec.describe Lowmu::SlugStatus do
     path
   end
 
-  subject(:slug_status) { described_class.new("my-post", source_file, store) }
+  subject(:slug_status) { described_class.new("posts/my-post", source_file, store) }
 
   after { FileUtils.rm_rf(content_dir) }
 
   describe "#call" do
-    context "when slug is in the ignore list" do
+    context "when key is in the ignore list" do
       before do
-        File.write(File.join(content_dir, "ignore.yml"), ["my-post"].to_yaml)
+        File.write(File.join(content_dir, "ignore.yml"), ["posts/my-post"].to_yaml)
       end
 
       it "returns :ignore" do
@@ -32,8 +32,8 @@ RSpec.describe Lowmu::SlugStatus do
 
     context "when generated files exist and source is older than output" do
       before do
-        store.ensure_slug_dir("my-post")
-        output = File.join(store.slug_dir("my-post"), "hugo.md")
+        store.ensure_slug_dir("posts/my-post")
+        output = File.join(store.slug_dir("posts/my-post"), "mastodon.txt")
         File.write(output, "generated content")
         past = Time.now - 60
         File.utime(past, past, source_file)
@@ -46,8 +46,8 @@ RSpec.describe Lowmu::SlugStatus do
 
     context "when generated files exist but source is newer than output" do
       before do
-        store.ensure_slug_dir("my-post")
-        output = File.join(store.slug_dir("my-post"), "hugo.md")
+        store.ensure_slug_dir("posts/my-post")
+        output = File.join(store.slug_dir("posts/my-post"), "mastodon.txt")
         File.write(output, "generated content")
         past = Time.now - 60
         File.utime(past, past, output)

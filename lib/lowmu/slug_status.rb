@@ -1,15 +1,15 @@
 module Lowmu
   class SlugStatus
-    def initialize(slug, source_path, content_store)
-      @slug = slug
+    def initialize(key, source_path, content_store)
+      @key = key
       @source_path = source_path
       @content_store = content_store
     end
 
     def call
-      return :ignore if @content_store.ignore_slugs.include?(@slug)
+      return :ignore if @content_store.ignore_slugs.include?(@key)
 
-      slug_dir = @content_store.slug_dir(@slug)
+      slug_dir = @content_store.slug_dir(@key)
       return :pending unless Dir.exist?(slug_dir)
 
       files = Dir.children(slug_dir).map { |f| File.join(slug_dir, f) }.select { |f| File.file?(f) }
