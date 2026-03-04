@@ -29,7 +29,7 @@ module Lowmu
       if results.empty?
         say "Nothing to generate." unless slug
       else
-        results.each { |r| say "Generated #{r[:target]} for #{r[:slug]}: #{r[:file]}" }
+        results.each { |r| say "Generated #{r[:target]} for #{r[:key]}: #{r[:file]}" }
       end
     rescue Lowmu::Error => e
       error_exit(e.message)
@@ -41,7 +41,7 @@ module Lowmu
       if results.empty?
         say "No content found."
       else
-        results.each { |entry| say "#{entry[:slug]}: #{entry[:status]}" }
+        results.each { |entry| say "#{entry[:key]}: #{entry[:status]}" }
       end
     rescue Lowmu::Error => e
       error_exit(e.message)

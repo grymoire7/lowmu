@@ -73,14 +73,14 @@ RSpec.describe Lowmu::CLI do
     context "when content is generated" do
       before do
         allow(command).to receive(:call).and_return([
-          {slug: "my-post", target: "mastodon", file: "/tmp/lowmu/my-post/mastodon.md"},
-          {slug: "my-post", target: "linkedin", file: "/tmp/lowmu/my-post/linkedin.md"}
+          {key: "posts/my-post", target: "mastodon", file: "/tmp/lowmu/posts/my-post/mastodon.txt"},
+          {key: "posts/my-post", target: "linkedin-post", file: "/tmp/lowmu/posts/my-post/linkedin_post.md"}
         ])
       end
 
       it "reports each generated result" do
         expect { cli.generate }.to output(
-          /Generated mastodon for my-post.*Generated linkedin for my-post/m
+          /Generated mastodon for posts\/my-post.*Generated linkedin-post for posts\/my-post/m
         ).to_stdout
       end
     end
@@ -118,14 +118,14 @@ RSpec.describe Lowmu::CLI do
     context "when content exists" do
       before do
         allow(command).to receive(:call).and_return([
-          {slug: "my-post", status: :pending},
-          {slug: "other-post", status: :generated}
+          {key: "posts/my-post", status: :pending},
+          {key: "notes/other-note", status: :generated}
         ])
       end
 
-      it "prints each slug with its status" do
+      it "prints each key with its status" do
         expect { cli.status }.to output(
-          /my-post: pending.*other-post: generated/m
+          /posts\/my-post: pending.*notes\/other-note: generated/m
         ).to_stdout
       end
     end
