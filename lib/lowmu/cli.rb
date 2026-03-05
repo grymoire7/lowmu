@@ -39,10 +39,11 @@ module Lowmu
       end
 
       tasks = planned.map do |t|
+        processing, processed = RandomProcessingTitle.generate
         {
           opts: {
-            title: "Generating #{t[:target]} for #{t[:key]}",
-            done: "Generated #{t[:target]} for #{t[:key]}"
+            title: "#{processing} #{t[:target]} for #{t[:key]}",
+            done: "#{processed} #{t[:target]} for #{t[:key]}"
           },
           block: -> { t[:generator].generate }
         }
