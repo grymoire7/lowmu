@@ -81,7 +81,7 @@ module Lowmu
 
       def applicable_targets(content_type)
         resolve_targets.reject do |target_name|
-          content_type == :note && generator_class_for(target_name)::FORM == :long
+          content_type == :short && generator_class_for(target_name)::FORM == :long
         end
       end
 

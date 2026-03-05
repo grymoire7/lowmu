@@ -32,7 +32,7 @@ RSpec.describe Lowmu::Commands::Status do
     context "without a key filter" do
       it "returns an entry for every discovered item" do
         results = described_class.new(nil, config: config).call
-        expect(results.map { |r| r[:key] }).to contain_exactly("posts/post-a", "notes/post-b")
+        expect(results.map { |r| r[:key] }).to contain_exactly("long/post-a", "short/post-b")
       end
 
       it "reports :pending for new items" do
@@ -43,50 +43,50 @@ RSpec.describe Lowmu::Commands::Status do
 
     context "with a specific key filter" do
       it "returns only that item's entry" do
-        results = described_class.new("posts/post-a", config: config).call
+        results = described_class.new("long/post-a", config: config).call
         expect(results.length).to eq(1)
-        expect(results.first[:key]).to eq("posts/post-a")
+        expect(results.first[:key]).to eq("long/post-a")
       end
     end
 
     context "with a generated item" do
       before do
-        store.ensure_slug_dir("posts/post-a")
-        output = File.join(store.slug_dir("posts/post-a"), "mastodon.txt")
+        store.ensure_slug_dir("long/post-a")
+        output = File.join(store.slug_dir("long/post-a"), "mastodon_short.md")
         File.write(output, "generated content")
         past = Time.now - 60
         File.utime(past, past, source_a)
       end
 
       it "returns :generated status" do
-        results = described_class.new("posts/post-a", config: config).call
+        results = described_class.new("long/post-a", config: config).call
         expect(results.first[:status]).to eq(:generated)
       end
     end
 
     context "with a stale item" do
       before do
-        store.ensure_slug_dir("posts/post-a")
-        output = File.join(store.slug_dir("posts/post-a"), "mastodon.txt")
+        store.ensure_slug_dir("long/post-a")
+        output = File.join(store.slug_dir("long/post-a"), "mastodon_short.md")
         File.write(output, "generated content")
         past = Time.now - 60
         File.utime(past, past, output)
       end
 
       it "returns :stale status" do
-        results = described_class.new("posts/post-a", config: config).call
+        results = described_class.new("long/post-a", config: config).call
         expect(results.first[:status]).to eq(:stale)
       end
     end
 
     context "with an ignored item" do
       before do
-        File.write(File.join(content_dir, "ignore.yml"), ["posts/post-a"].to_yaml)
+        File.write(File.join(content_dir, "ignore.yml"), ["long/post-a"].to_yaml)
       end
 
       it "excludes ignored items from results" do
         results = described_class.new(nil, config: config).call
-        expect(results.map { |r| r[:key] }).not_to include("posts/post-a")
+        expect(results.map { |r| r[:key] }).not_to include("long/post-a")
       end
     end
   end

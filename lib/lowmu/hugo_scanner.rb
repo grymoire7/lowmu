@@ -8,8 +8,8 @@ module Lowmu
 
     def scan
       results = []
-      @post_dirs.each { |dir| results += scan_section(dir, :post) }
-      @note_dirs.each { |dir| results += scan_section(dir, :note) }
+      @post_dirs.each { |dir| results += scan_section(dir, :long) }
+      @note_dirs.each { |dir| results += scan_section(dir, :short) }
       results
     end
 
@@ -30,7 +30,7 @@ module Lowmu
           section: section,
           content_type: content_type,
           source_path: full_path,
-          key: "#{section}/#{slug}"
+          key: "#{content_type}/#{slug}"
         }
       end
     end

@@ -66,13 +66,13 @@ RSpec.describe Lowmu::Commands::Generate do
       it "includes the compound key in each result" do
         mock_llm_response(content: "output")
         results = described_class.new(config: config).call
-        expect(results.map { |r| r[:key] }).to all(eq("posts/my-post"))
+        expect(results.map { |r| r[:key] }).to all(eq("long/my-post"))
       end
 
       it "creates the key output directory" do
         mock_llm_response(content: "output")
         described_class.new(config: config).call
-        expect(Dir.exist?(store.slug_dir("posts/my-post"))).to be true
+        expect(Dir.exist?(store.slug_dir("long/my-post"))).to be true
       end
     end
 
@@ -85,20 +85,20 @@ RSpec.describe Lowmu::Commands::Generate do
       it "skips long-form targets" do
         mock_llm_response(content: "Condensed #ruby")
         results = described_class.new(config: config).call
-        note_results = results.select { |r| r[:key] == "notes/my-note" }
+        note_results = results.select { |r| r[:key] == "short/my-note" }
         expect(note_results.map { |r| r[:target] }).not_to include("substack-long")
       end
 
       it "includes short-form targets" do
         mock_llm_response(content: "Condensed #ruby")
         results = described_class.new(config: config).call
-        note_results = results.select { |r| r[:key] == "notes/my-note" }
+        note_results = results.select { |r| r[:key] == "short/my-note" }
         expect(note_results.map { |r| r[:target] }).to include("mastodon")
       end
     end
 
     context "with an already-generated (non-stale) post" do
-      before { mark_generated("posts/my-post") }
+      before { mark_generated("long/my-post") }
 
       it "skips it" do
         results = described_class.new(config: config).call
@@ -113,7 +113,7 @@ RSpec.describe Lowmu::Commands::Generate do
     end
 
     context "with a stale post" do
-      before { mark_stale("posts/my-post") }
+      before { mark_stale("long/my-post") }
 
       it "does not generate without explicit key or --force" do
         results = nil
@@ -123,12 +123,12 @@ RSpec.describe Lowmu::Commands::Generate do
 
       it "warns about stale content to stderr" do
         expect { described_class.new(config: config).call }
-          .to output(/stale.*posts\/my-post/i).to_stderr
+          .to output(/stale.*long\/my-post/i).to_stderr
       end
 
       it "generates when specific key is given" do
         mock_llm_response(content: "output")
-        results = described_class.new("posts/my-post", config: config).call
+        results = described_class.new("long/my-post", config: config).call
         expect(results).not_to be_empty
       end
 
@@ -140,7 +140,7 @@ RSpec.describe Lowmu::Commands::Generate do
     end
 
     context "with an ignored post" do
-      before { mark_ignored("posts/my-post") }
+      before { mark_ignored("long/my-post") }
 
       it "skips it" do
         results = described_class.new(config: config).call
@@ -177,7 +177,7 @@ RSpec.describe Lowmu::Commands::Generate do
 
       it "includes the compound key in each entry" do
         results = described_class.new(config: config).plan
-        expect(results.map { |r| r[:key] }).to all(eq("posts/my-post"))
+        expect(results.map { |r| r[:key] }).to all(eq("long/my-post"))
       end
 
       it "includes a generator instance in each entry" do
@@ -187,12 +187,12 @@ RSpec.describe Lowmu::Commands::Generate do
 
       it "creates the key output directory" do
         described_class.new(config: config).plan
-        expect(Dir.exist?(store.slug_dir("posts/my-post"))).to be true
+        expect(Dir.exist?(store.slug_dir("long/my-post"))).to be true
       end
     end
 
     context "with an already-generated post" do
-      before { mark_generated("posts/my-post") }
+      before { mark_generated("long/my-post") }
 
       it "returns empty" do
         expect(described_class.new(config: config).plan).to be_empty

@@ -41,16 +41,16 @@ RSpec.describe Lowmu::HugoScanner do
       expect(result[:source_path]).to eq(File.join(hugo_dir, "posts/my-post/index.md"))
     end
 
-    it "tags items from post_dirs with content_type :post" do
+    it "tags items from post_dirs with content_type :long" do
       write_md("posts/my-post/index.md")
       result = scanner.scan.first
-      expect(result[:content_type]).to eq(:post)
+      expect(result[:content_type]).to eq(:long)
     end
 
-    it "tags items from note_dirs with content_type :note" do
+    it "tags items from note_dirs with content_type :short" do
       write_md("notes/quick-tip.md")
       result = scanner.scan.first
-      expect(result[:content_type]).to eq(:note)
+      expect(result[:content_type]).to eq(:short)
     end
 
     it "sets section to the directory name" do
@@ -59,10 +59,10 @@ RSpec.describe Lowmu::HugoScanner do
       expect(result[:section]).to eq("posts")
     end
 
-    it "sets key to section/slug" do
+    it "sets key to content_type/slug" do
       write_md("posts/my-post/index.md")
       result = scanner.scan.first
-      expect(result[:key]).to eq("posts/my-post")
+      expect(result[:key]).to eq("long/my-post")
     end
 
     it "excludes directories not in post_dirs or note_dirs" do
