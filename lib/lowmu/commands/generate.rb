@@ -3,7 +3,7 @@ module Lowmu
     class Generate
       GENERATOR_MAP = {
         "substack_long" => Generators::SubstackLong,
-        "substack_note" => Generators::SubstackNote,
+        "substack_short" => Generators::SubstackShort,
         "mastodon" => Generators::Mastodon,
         "linkedin_short" => Generators::LinkedinShort,
         "linkedin_long" => Generators::LinkedinLong
