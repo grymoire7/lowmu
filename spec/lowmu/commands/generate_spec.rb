@@ -10,7 +10,7 @@ RSpec.describe Lowmu::Commands::Generate do
   let(:store) { Lowmu::ContentStore.new(content_dir) }
 
   let(:mastodon_target) { {"name" => "mastodon", "type" => "mastodon"} }
-  let(:newsletter_target) { {"name" => "substack-newsletter", "type" => "substack_newsletter"} }
+  let(:newsletter_target) { {"name" => "substack-long", "type" => "substack_long"} }
   let(:llm_config) { {"model" => "claude-opus-4-6"} }
 
   let(:config) do
@@ -27,7 +27,7 @@ RSpec.describe Lowmu::Commands::Generate do
     FileUtils.mkdir_p(post_dir)
     FileUtils.cp("spec/fixtures/sample_post.md", source_path)
     allow(config).to receive(:target_config).with("mastodon").and_return(mastodon_target)
-    allow(config).to receive(:target_config).with("substack-newsletter").and_return(newsletter_target)
+    allow(config).to receive(:target_config).with("substack-long").and_return(newsletter_target)
   end
 
   after do
@@ -60,7 +60,7 @@ RSpec.describe Lowmu::Commands::Generate do
       it "generates content for all configured targets" do
         mock_llm_response(content: "Generated output.")
         results = described_class.new(config: config).call
-        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-newsletter")
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-long")
       end
 
       it "includes the compound key in each result" do
@@ -86,7 +86,7 @@ RSpec.describe Lowmu::Commands::Generate do
         mock_llm_response(content: "Condensed #ruby")
         results = described_class.new(config: config).call
         note_results = results.select { |r| r[:key] == "notes/my-note" }
-        expect(note_results.map { |r| r[:target] }).not_to include("substack-newsletter")
+        expect(note_results.map { |r| r[:target] }).not_to include("substack-long")
       end
 
       it "includes short-form targets" do
@@ -172,7 +172,7 @@ RSpec.describe Lowmu::Commands::Generate do
     context "with a pending post" do
       it "returns one entry per applicable target" do
         results = described_class.new(config: config).plan
-        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-newsletter")
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-long")
       end
 
       it "includes the compound key in each entry" do

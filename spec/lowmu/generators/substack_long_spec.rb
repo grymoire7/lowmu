@@ -1,15 +1,15 @@
 require "spec_helper"
 
-RSpec.describe Lowmu::Generators::SubstackNewsletter do
-  let(:slug_dir) { Dir.mktmpdir("lowmu_substack_newsletter_test") }
+RSpec.describe Lowmu::Generators::SubstackLong do
+  let(:slug_dir) { Dir.mktmpdir("lowmu_substack_long_test") }
   let(:source_path) { "spec/fixtures/sample_post.md" }
-  let(:target_config) { {"name" => "substack-newsletter", "type" => "substack_newsletter"} }
+  let(:target_config) { {"name" => "substack-long", "type" => "substack_long"} }
   let(:llm_config) { {"model" => "claude-opus-4-6"} }
 
   after { FileUtils.rm_rf(slug_dir) }
 
   def generator
-    described_class.new(slug_dir, source_path, :post, target_config, llm_config)
+    described_class.new(slug_dir, source_path, :long, target_config, llm_config)
   end
 
   it "has FORM :long" do
@@ -18,24 +18,24 @@ RSpec.describe Lowmu::Generators::SubstackNewsletter do
 
   describe "#generate" do
     it "returns the output filename" do
-      expect(generator.generate).to eq("substack_newsletter.md")
+      expect(generator.generate).to eq("substack_long.md")
     end
 
-    it "creates substack_newsletter.md" do
+    it "creates substack_long.md" do
       generator.generate
-      expect(File.exist?(File.join(slug_dir, "substack_newsletter.md"))).to be true
+      expect(File.exist?(File.join(slug_dir, "substack_long.md"))).to be true
     end
 
     it "strips front matter from the output" do
       generator.generate
-      output = File.read(File.join(slug_dir, "substack_newsletter.md"))
+      output = File.read(File.join(slug_dir, "substack_long.md"))
       expect(output).not_to include("title:")
       expect(output).not_to include("---")
     end
 
     it "preserves the post body content" do
       generator.generate
-      output = File.read(File.join(slug_dir, "substack_newsletter.md"))
+      output = File.read(File.join(slug_dir, "substack_long.md"))
       expect(output).to include("content of my test post")
     end
 

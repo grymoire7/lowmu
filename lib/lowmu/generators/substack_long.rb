@@ -1,8 +1,8 @@
 module Lowmu
   module Generators
-    class SubstackNewsletter < Base
+    class SubstackLong < Base
       FORM = :long
-      OUTPUT_FILE = "substack_newsletter.md"
+      OUTPUT_FILE = "substack_long.md"
 
       def generate
         loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
