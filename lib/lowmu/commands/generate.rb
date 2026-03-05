@@ -6,7 +6,7 @@ module Lowmu
         "substack_note" => Generators::SubstackNote,
         "mastodon" => Generators::Mastodon,
         "linkedin_post" => Generators::LinkedinPost,
-        "linkedin_article" => Generators::LinkedinArticle
+        "linkedin_long" => Generators::LinkedinLong
       }.freeze
 
       def initialize(key_filter = nil, config:, target: nil, force: false)

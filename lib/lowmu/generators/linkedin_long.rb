@@ -1,8 +1,8 @@
 module Lowmu
   module Generators
-    class LinkedinArticle < Base
+    class LinkedinLong < Base
       FORM = :long
-      OUTPUT_FILE = "linkedin_article.md"
+      OUTPUT_FILE = "linkedin_long.md"
 
       PROMPT = <<~PROMPT
         Write a long-form LinkedIn article based on the following blog post. Requirements:
