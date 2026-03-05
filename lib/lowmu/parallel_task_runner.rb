@@ -52,8 +52,35 @@ module Lowmu
     end
 
     def run_with_spinners
-      # implemented in Task 3
-      raise NotImplementedError
+      require "tty-spinner"
+      successes = []
+      errors = []
+      mutex = Mutex.new
+
+      multi = TTY::Spinner::Multi.new(output: @output)
+
+      spinner_tasks = @tasks.map do |task|
+        opts = task[:opts].dup
+        title = opts.delete(:title) || "Running..."
+        done = opts.delete(:done) || "Done"
+        sp = multi.register("[:spinner] #{title}", **opts)
+        [sp, title, done, task[:block]]
+      end
+
+      threads = spinner_tasks.map do |sp, title, done, block|
+        Thread.new do
+          sp.auto_spin
+          value = block.call
+          sp.success(done)
+          mutex.synchronize { successes << TaskSuccess.new(title: title, value: value) }
+        rescue => e
+          sp.error(e.message)
+          mutex.synchronize { errors << TaskError.new(title: title, exception: e) }
+        end
+      end
+
+      threads.each(&:join)
+      Result.new(successes: successes, errors: errors)
     end
   end
 end

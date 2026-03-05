@@ -1,4 +1,5 @@
 require "spec_helper"
+require "tty-spinner"
 
 RSpec.describe Lowmu::ParallelTaskRunner do
   let(:output) { StringIO.new }
@@ -77,6 +78,62 @@ RSpec.describe Lowmu::ParallelTaskRunner do
 
       it "returns all errors" do
         expect(runner(tasks).run.errors.size).to eq(2)
+      end
+    end
+
+    context "when tty: true" do
+      let(:spinner) { instance_double(TTY::Spinner, auto_spin: nil, success: nil, error: nil) }
+      let(:multi) { instance_double(TTY::Spinner::Multi) }
+
+      before do
+        allow(TTY::Spinner::Multi).to receive(:new).and_return(multi)
+        allow(multi).to receive(:register).and_return(spinner)
+      end
+
+      def tty_runner(tasks)
+        described_class.new(tasks, tty: true)
+      end
+
+      context "when a task succeeds" do
+        let(:tasks) do
+          [{opts: {title: "Task A", done: "Done A", format: :pulse}, block: -> { "x" }}]
+        end
+
+        it "returns the result as a success" do
+          result = tty_runner(tasks).run
+          expect(result.successes.first.value).to eq("x")
+        end
+
+        it "calls auto_spin on the spinner" do
+          tty_runner(tasks).run
+          expect(spinner).to have_received(:auto_spin)
+        end
+
+        it "calls success with the done message" do
+          tty_runner(tasks).run
+          expect(spinner).to have_received(:success).with("Done A")
+        end
+
+        it "registers the spinner with the title and extra opts" do
+          tty_runner(tasks).run
+          expect(multi).to have_received(:register).with("[:spinner] Task A", format: :pulse)
+        end
+      end
+
+      context "when a task fails" do
+        let(:tasks) do
+          [{opts: {title: "Bad", done: "Done"}, block: -> { raise "boom" }}]
+        end
+
+        it "captures the error" do
+          result = tty_runner(tasks).run
+          expect(result.errors.first.exception.message).to eq("boom")
+        end
+
+        it "calls error with the exception message" do
+          tty_runner(tasks).run
+          expect(spinner).to have_received(:error).with("boom")
+        end
       end
     end
   end
