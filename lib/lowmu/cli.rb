@@ -41,7 +41,7 @@ module Lowmu
       tasks = planned.map do |t|
         {
           opts: {
-            title: "Generating #{t[:target]} for #{t[:key]}...",
+            title: "Generating #{t[:target]} for #{t[:key]}",
             done: "Generated #{t[:target]} for #{t[:key]}"
           },
           block: -> { t[:generator].generate }
