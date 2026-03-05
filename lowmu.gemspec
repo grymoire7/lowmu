@@ -14,4 +14,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ruby_llm", "~> 1.12"
   spec.add_dependency "zeitwerk", "~> 2.7"
   spec.add_dependency "front_matter_parser", "~> 1.0"
+  spec.add_dependency "tty-spinner", "~> 0.9"
 end
