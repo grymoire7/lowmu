@@ -82,7 +82,7 @@ RSpec.describe Lowmu::ParallelTaskRunner do
     end
 
     context "when tty: true" do
-      let(:spinner) { instance_double(TTY::Spinner, auto_spin: nil, success: nil, error: nil) }
+      let(:spinner) { instance_double(TTY::Spinner, auto_spin: nil, update: nil, success: nil, error: nil) }
       let(:multi) { instance_double(TTY::Spinner::Multi) }
 
       before do
@@ -109,14 +109,24 @@ RSpec.describe Lowmu::ParallelTaskRunner do
           expect(spinner).to have_received(:auto_spin)
         end
 
-        it "calls success with the done message" do
+        it "sets the initial title on the spinner" do
           tty_runner(tasks).run
-          expect(spinner).to have_received(:success).with("Done A")
+          expect(spinner).to have_received(:update).with(title: "Task A")
         end
 
-        it "registers the spinner with the title and extra opts" do
+        it "updates the spinner title to the done message before success" do
           tty_runner(tasks).run
-          expect(multi).to have_received(:register).with("[:spinner] Task A", format: :pulse)
+          expect(spinner).to have_received(:update).with(title: "Done A")
+        end
+
+        it "calls success with no message" do
+          tty_runner(tasks).run
+          expect(spinner).to have_received(:success).with(no_args)
+        end
+
+        it "registers the spinner with the title token and extra opts" do
+          tty_runner(tasks).run
+          expect(multi).to have_received(:register).with("[:spinner] :title", format: :pulse)
         end
       end
 

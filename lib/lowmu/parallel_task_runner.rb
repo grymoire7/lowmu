@@ -63,7 +63,8 @@ module Lowmu
         opts = task[:opts].dup
         title = opts.delete(:title) || "Running..."
         done = opts.delete(:done) || "Done"
-        sp = multi.register("[:spinner] #{title}", **opts)
+        sp = multi.register("[:spinner] :title", **opts)
+        sp.update(title: title)
         [sp, title, done, task[:block]]
       end
 
@@ -71,7 +72,8 @@ module Lowmu
         Thread.new do
           sp.auto_spin
           value = block.call
-          sp.success(done)
+          sp.update(title: done)
+          sp.success
           mutex.synchronize { successes << TaskSuccess.new(title: title, value: value) }
         rescue => e
           sp.error(e.message)
