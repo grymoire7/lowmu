@@ -1,8 +1,8 @@
 module Lowmu
   module Generators
-    class Mastodon < Base
+    class MastodonShort < Base
       FORM = :short
-      OUTPUT_FILE = "mastodon.txt"
+      OUTPUT_FILE = "mastodon_short.md"
       MAX_CHARS = 500
 
       POST_PROMPT = <<~PROMPT
@@ -33,7 +33,7 @@ module Lowmu
       PROMPT
 
       def generate
-        content = if @content_type == :note
+        content = if @content_type == :short
           loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
           parsed = FrontMatterParser::Parser.new(:md, loader: loader).call(original_content)
           body = parsed.content.strip

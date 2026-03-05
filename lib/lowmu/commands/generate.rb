@@ -4,7 +4,7 @@ module Lowmu
       GENERATOR_MAP = {
         "substack_long" => Generators::SubstackLong,
         "substack_short" => Generators::SubstackShort,
-        "mastodon" => Generators::Mastodon,
+        "mastodon_short" => Generators::MastodonShort,
         "linkedin_short" => Generators::LinkedinShort,
         "linkedin_long" => Generators::LinkedinLong
       }.freeze

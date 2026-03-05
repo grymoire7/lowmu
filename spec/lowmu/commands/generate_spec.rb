@@ -9,7 +9,7 @@ RSpec.describe Lowmu::Commands::Generate do
   let(:note_source_path) { File.join(note_dir, "my-note.md") }
   let(:store) { Lowmu::ContentStore.new(content_dir) }
 
-  let(:mastodon_target) { {"name" => "mastodon", "type" => "mastodon"} }
+  let(:mastodon_target) { {"name" => "mastodon", "type" => "mastodon_short"} }
   let(:newsletter_target) { {"name" => "substack-long", "type" => "substack_long"} }
   let(:llm_config) { {"model" => "claude-opus-4-6"} }
 
@@ -37,7 +37,7 @@ RSpec.describe Lowmu::Commands::Generate do
 
   def mark_generated(key)
     store.ensure_slug_dir(key)
-    output = File.join(store.slug_dir(key), "mastodon.txt")
+    output = File.join(store.slug_dir(key), "mastodon_short.md")
     File.write(output, "generated content")
     past = Time.now - 60
     File.utime(past, past, source_path)
@@ -45,7 +45,7 @@ RSpec.describe Lowmu::Commands::Generate do
 
   def mark_stale(key)
     store.ensure_slug_dir(key)
-    output = File.join(store.slug_dir(key), "mastodon.txt")
+    output = File.join(store.slug_dir(key), "mastodon_short.md")
     File.write(output, "generated content")
     past = Time.now - 60
     File.utime(past, past, output)

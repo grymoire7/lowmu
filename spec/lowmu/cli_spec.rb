@@ -77,7 +77,7 @@ RSpec.describe Lowmu::CLI do
     end
 
     context "when content is generated successfully" do
-      let(:generator_a) { instance_double(Lowmu::Generators::Mastodon) }
+      let(:generator_a) { instance_double(Lowmu::Generators::MastodonShort) }
       let(:planned) do
         [{key: "posts/my-post", target: "mastodon", generator: generator_a}]
       end
@@ -105,7 +105,7 @@ RSpec.describe Lowmu::CLI do
       let(:error) { Lowmu::ParallelTaskRunner::TaskError.new(title: "Generating mastodon...", exception: RuntimeError.new("rate limit")) }
       let(:run_result) { Lowmu::ParallelTaskRunner::Result.new(successes: [], errors: [error]) }
       let(:planned) do
-        [{key: "posts/my-post", target: "mastodon", generator: instance_double(Lowmu::Generators::Mastodon)}]
+        [{key: "posts/my-post", target: "mastodon", generator: instance_double(Lowmu::Generators::MastodonShort)}]
       end
 
       before do
