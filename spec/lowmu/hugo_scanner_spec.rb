@@ -84,5 +84,18 @@ RSpec.describe Lowmu::HugoScanner do
     it "returns empty array when hugo_content_dir has no matching markdown files" do
       expect(scanner.scan).to eq([])
     end
+
+    it "excludes files with draft: true in front matter" do
+      write_md("posts/published/index.md", title: "Published")
+      write_md("posts/draft-post/index.md", title: "Draft", draft: true)
+      results = scanner.scan
+      expect(results.map { |r| r[:slug] }).to include("published")
+      expect(results.map { |r| r[:slug] }).not_to include("draft-post")
+    end
+
+    it "includes files with draft: false in front matter" do
+      write_md("posts/not-a-draft/index.md", title: "Not a Draft", draft: false)
+      expect(scanner.scan.map { |r| r[:slug] }).to include("not-a-draft")
+    end
   end
 end

@@ -19,9 +19,12 @@ module Lowmu
       full_dir = File.join(@hugo_content_dir, section)
       return [] unless Dir.exist?(full_dir)
 
-      Dir.glob("**/*.md", base: full_dir).map do |rel_path|
+      Dir.glob("**/*.md", base: full_dir).filter_map do |rel_path|
         full_path = File.join(full_dir, rel_path)
-        slug = derive_slug(full_path)
+        fm = parse_front_matter(full_path)
+        next if fm["draft"] == true
+
+        slug = slug_from_front_matter(fm, full_path)
         {
           slug: slug,
           section: section,
@@ -32,12 +35,14 @@ module Lowmu
       end
     end
 
-    def derive_slug(path)
+    def parse_front_matter(path)
       content = File.read(path)
       loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
       parsed = FrontMatterParser::Parser.new(:md, loader: loader).call(content)
+      parsed.front_matter || {}
+    end
 
-      fm = parsed.front_matter || {}
+    def slug_from_front_matter(fm, path)
       return fm["slug"] if fm["slug"]
 
       if File.basename(path) == "index.md"
@@ -45,6 +50,10 @@ module Lowmu
       else
         File.basename(path, ".md")
       end
+    end
+
+    def derive_slug(path)
+      slug_from_front_matter(parse_front_matter(path), path)
     end
   end
 end
