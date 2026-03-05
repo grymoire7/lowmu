@@ -5,7 +5,7 @@ module Lowmu
         "substack_newsletter" => Generators::SubstackNewsletter,
         "substack_note" => Generators::SubstackNote,
         "mastodon" => Generators::Mastodon,
-        "linkedin_post" => Generators::LinkedinPost,
+        "linkedin_short" => Generators::LinkedinShort,
         "linkedin_long" => Generators::LinkedinLong
       }.freeze
 

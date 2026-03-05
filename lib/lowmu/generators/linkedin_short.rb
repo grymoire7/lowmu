@@ -1,8 +1,8 @@
 module Lowmu
   module Generators
-    class LinkedinPost < Base
+    class LinkedinShort < Base
       FORM = :short
-      OUTPUT_FILE = "linkedin_post.md"
+      OUTPUT_FILE = "linkedin_short.md"
 
       POST_PROMPT = <<~PROMPT
         Write a LinkedIn post based on the following blog post. Requirements:
@@ -32,7 +32,7 @@ module Lowmu
       PROMPT
 
       def generate
-        prompt = (@content_type == :note) ? NOTE_PROMPT : POST_PROMPT
+        prompt = (@content_type == :short) ? NOTE_PROMPT : POST_PROMPT
         content = ask_llm(prompt % original_content)
         write_output(OUTPUT_FILE, content)
         OUTPUT_FILE
