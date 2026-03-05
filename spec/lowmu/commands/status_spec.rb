@@ -84,9 +84,9 @@ RSpec.describe Lowmu::Commands::Status do
         File.write(File.join(content_dir, "ignore.yml"), ["posts/post-a"].to_yaml)
       end
 
-      it "returns :ignore status" do
-        results = described_class.new("posts/post-a", config: config).call
-        expect(results.first[:status]).to eq(:ignore)
+      it "excludes ignored items from results" do
+        results = described_class.new(nil, config: config).call
+        expect(results.map { |r| r[:key] }).not_to include("posts/post-a")
       end
     end
   end
