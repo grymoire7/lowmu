@@ -30,7 +30,11 @@ module Lowmu
       planned = command.plan
 
       if planned.empty?
-        say "Nothing to generate." unless slug
+        if slug
+          say "Output is already up-to-date. Use --force to regenerate."
+        else
+          say "Nothing to generate."
+        end
         return
       end
 

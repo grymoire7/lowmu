@@ -67,8 +67,12 @@ RSpec.describe Lowmu::CLI do
     context "when there is nothing to generate and a slug is given" do
       before { allow(command).to receive(:plan).and_return([]) }
 
-      it "produces no output" do
-        expect { cli.generate("my-post") }.not_to output.to_stdout
+      it "tells the user the output is already up-to-date" do
+        expect { cli.generate("my-post") }.to output(/already up-to-date/).to_stdout
+      end
+
+      it "mentions --force to regenerate" do
+        expect { cli.generate("my-post") }.to output(/--force/).to_stdout
       end
     end
 
