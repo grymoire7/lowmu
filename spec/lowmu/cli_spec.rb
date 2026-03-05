@@ -119,7 +119,7 @@ RSpec.describe Lowmu::CLI do
       end
 
       it "exits with code 1" do
-        cli.generate
+        expect { cli.generate }.to output.to_stdout
         expect(cli).to have_received(:exit).with(1)
       end
     end
