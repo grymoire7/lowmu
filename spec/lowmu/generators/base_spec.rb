@@ -24,6 +24,12 @@ RSpec.describe Lowmu::Generators::Base do
         generator.send(:ask_llm, "test prompt")
         expect(RubyLLM).to have_received(:chat).with(model: "claude-opus-4-6")
       end
+
+      it "raises a helpful error when the API key is missing" do
+        allow(RubyLLM).to receive(:chat).and_raise(RubyLLM::ConfigurationError, "Missing configuration for Anthropic: anthropic_api_key")
+        expect { generator.send(:ask_llm, "test prompt") }
+          .to raise_error(Lowmu::Error, /ANTHROPIC_API_KEY/)
+      end
     end
   end
 end

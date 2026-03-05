@@ -28,6 +28,8 @@ module Lowmu
           raise Error, "No model configured. Run `lowmu configure` to set up an LLM provider."
         end
         RubyLLM.chat(model: model).ask(prompt).content
+      rescue RubyLLM::ConfigurationError
+        raise Error, "ANTHROPIC_API_KEY is not set. Please set it in your environment before running lowmu."
       end
     end
   end
