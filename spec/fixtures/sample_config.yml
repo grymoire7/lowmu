@@ -9,14 +9,14 @@ llm:
   model: claude-opus-4-6
 
 targets:
-  - name: substack-newsletter
-    type: substack_newsletter
-  - name: substack-note
-    type: substack_note
+  - name: linkedin-long
+    type: linkedin_long
+  - name: linkedin-short
+    type: linkedin_short
   - name: mastodon
-    type: mastodon
+    type: mastodon_short
     base_url: https://mastodon.social
-  - name: linkedin-post
-    type: linkedin_post
-  - name: linkedin-article
-    type: linkedin_article
+  - name: substack-long
+    type: substack_long
+  - name: substack-short
+    type: substack_short

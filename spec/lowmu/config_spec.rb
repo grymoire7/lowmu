@@ -52,7 +52,7 @@ RSpec.describe Lowmu::Config do
     it "returns the config hash for a known target" do
       config = described_class.load(fixture_path)
       target = config.target_config("mastodon")
-      expect(target["type"]).to eq("mastodon")
+      expect(target["type"]).to eq("mastodon_short")
     end
 
     it "raises an error for an unknown target" do

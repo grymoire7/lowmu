@@ -14,17 +14,18 @@ llm:
 
 # Generation targets (no auth needed — you post manually)
 targets:
-  - name: my-hugo-blog
-    type: hugo
-    base_url: https://example.com
-    base_path: ~/projects/my-blog/content
+  - name: linkedin-long
+    type: linkedin_long
 
-  - name: substack
-    type: substack
+  - name: linkedin-short
+    type: linkedin_short
+
+  - name: substack-long
+    type: substack_long
+
+  - name: substack-short
+    type: substack_short
 
   - name: mastodon
-    type: mastodon
+    type: mastodon_short
     base_url: https://mastodon.social
-
-  - name: linkedin
-    type: linkedin
