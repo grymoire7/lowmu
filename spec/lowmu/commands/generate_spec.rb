@@ -167,4 +167,36 @@ RSpec.describe Lowmu::Commands::Generate do
       end
     end
   end
+
+  describe "#plan" do
+    context "with a pending post" do
+      it "returns one entry per applicable target" do
+        results = described_class.new(config: config).plan
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-newsletter")
+      end
+
+      it "includes the compound key in each entry" do
+        results = described_class.new(config: config).plan
+        expect(results.map { |r| r[:key] }).to all(eq("posts/my-post"))
+      end
+
+      it "includes a generator instance in each entry" do
+        results = described_class.new(config: config).plan
+        expect(results.map { |r| r[:generator] }).to all(respond_to(:generate))
+      end
+
+      it "creates the key output directory" do
+        described_class.new(config: config).plan
+        expect(Dir.exist?(store.slug_dir("posts/my-post"))).to be true
+      end
+    end
+
+    context "with an already-generated post" do
+      before { mark_generated("posts/my-post") }
+
+      it "returns empty" do
+        expect(described_class.new(config: config).plan).to be_empty
+      end
+    end
+  end
 end

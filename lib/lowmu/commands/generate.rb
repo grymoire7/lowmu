@@ -17,7 +17,7 @@ module Lowmu
         @store = ContentStore.new(config.content_dir)
       end
 
-      def call
+      def plan
         configure_llm
         items = HugoScanner.new(
           @config.hugo_content_dir,
@@ -27,10 +27,33 @@ module Lowmu
         items = items.select { |item| item[:key] == @key_filter } if @key_filter
         warn_stale(items)
         items.select { |item| should_generate?(item) }
-          .flat_map { |item| generate_item(item) }
+          .flat_map { |item| plan_item(item) }
+      end
+
+      def call
+        plan.map do |t|
+          file = t[:generator].generate
+          {key: t[:key], target: t[:target], file: file}
+        end
       end
 
       private
+
+      def plan_item(item)
+        @store.ensure_slug_dir(item[:key])
+        applicable_targets(item[:content_type]).map do |target_name|
+          target_config = @config.target_config(target_name)
+          generator_class = generator_class_for(target_name)
+          generator = generator_class.new(
+            @store.slug_dir(item[:key]),
+            item[:source_path],
+            item[:content_type],
+            target_config,
+            @config.llm
+          )
+          {key: item[:key], target: target_name, generator: generator}
+        end
+      end
 
       def should_generate?(item)
         status = item_status(item)
@@ -54,25 +77,6 @@ module Lowmu
       def item_status(item)
         @status_cache ||= {}
         @status_cache[item[:key]] ||= SlugStatus.new(item[:key], item[:source_path], @store).call
-      end
-
-      def generate_item(item)
-        @store.ensure_slug_dir(item[:key])
-
-        applicable_targets(item[:content_type]).map do |target_name|
-          target_config = @config.target_config(target_name)
-          generator_class = generator_class_for(target_name)
-
-          output_file = generator_class.new(
-            @store.slug_dir(item[:key]),
-            item[:source_path],
-            item[:content_type],
-            target_config,
-            @config.llm
-          ).generate
-
-          {key: item[:key], target: target_name, file: output_file}
-        end
       end
 
       def applicable_targets(content_type)
