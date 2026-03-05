@@ -4,21 +4,10 @@ module Lowmu
       FORM = :long
       OUTPUT_FILE = "substack_newsletter.md"
 
-      PROMPT = <<~PROMPT
-        Reformat the following markdown blog post for publication on Substack.
-        Keep the full content intact. Ensure the markdown is clean and readable.
-        Remove any front matter — return only the body content with no front matter at all.
-        Preserve the author's voice and tone exactly.
-
-        Original post:
-        %s
-
-        Return only the formatted markdown content.
-      PROMPT
-
       def generate
-        content = ask_llm(PROMPT % original_content)
-        write_output(OUTPUT_FILE, content)
+        loader = FrontMatterParser::Loader::Yaml.new(allowlist_classes: [Date])
+        parsed = FrontMatterParser::Parser.new(:md, loader: loader).call(original_content)
+        write_output(OUTPUT_FILE, parsed.content)
         OUTPUT_FILE
       end
     end

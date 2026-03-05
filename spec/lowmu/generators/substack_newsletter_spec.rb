@@ -17,8 +17,6 @@ RSpec.describe Lowmu::Generators::SubstackNewsletter do
   end
 
   describe "#generate" do
-    before { mock_llm_response(content: "Reformatted newsletter content.") }
-
     it "returns the output filename" do
       expect(generator.generate).to eq("substack_newsletter.md")
     end
@@ -28,16 +26,22 @@ RSpec.describe Lowmu::Generators::SubstackNewsletter do
       expect(File.exist?(File.join(slug_dir, "substack_newsletter.md"))).to be true
     end
 
-    it "calls the LLM once" do
-      mock_chat = mock_llm_response(content: "Newsletter content.")
+    it "strips front matter from the output" do
       generator.generate
-      expect(mock_chat).to have_received(:ask).once
+      output = File.read(File.join(slug_dir, "substack_newsletter.md"))
+      expect(output).not_to include("title:")
+      expect(output).not_to include("---")
     end
 
-    it "sends post content to LLM" do
-      mock_chat = mock_llm_response(content: "output")
+    it "preserves the post body content" do
       generator.generate
-      expect(mock_chat).to have_received(:ask).with(including("content of my test post"))
+      output = File.read(File.join(slug_dir, "substack_newsletter.md"))
+      expect(output).to include("content of my test post")
+    end
+
+    it "does not call the LLM" do
+      expect(RubyLLM).not_to receive(:chat)
+      generator.generate
     end
   end
 end
