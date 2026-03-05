@@ -48,14 +48,16 @@ RSpec.describe Lowmu::CLI do
   describe "#generate" do
     let(:command) { instance_double(Lowmu::Commands::Generate) }
     let(:config) { instance_double(Lowmu::Config) }
+    let(:runner) { instance_double(Lowmu::ParallelTaskRunner) }
 
     before do
       allow(Lowmu::Config).to receive(:load).and_return(config)
       allow(Lowmu::Commands::Generate).to receive(:new).and_return(command)
+      allow(Lowmu::ParallelTaskRunner).to receive(:new).and_return(runner)
     end
 
     context "when there is nothing to generate and no slug is given" do
-      before { allow(command).to receive(:call).and_return([]) }
+      before { allow(command).to receive(:plan).and_return([]) }
 
       it "says nothing to generate" do
         expect { cli.generate }.to output(/Nothing to generate/).to_stdout
@@ -63,31 +65,64 @@ RSpec.describe Lowmu::CLI do
     end
 
     context "when there is nothing to generate and a slug is given" do
-      before { allow(command).to receive(:call).and_return([]) }
+      before { allow(command).to receive(:plan).and_return([]) }
 
       it "produces no output" do
         expect { cli.generate("my-post") }.not_to output.to_stdout
       end
     end
 
-    context "when content is generated" do
+    context "when content is generated successfully" do
+      let(:generator_a) { instance_double(Lowmu::Generators::Mastodon) }
+      let(:planned) do
+        [{key: "posts/my-post", target: "mastodon", generator: generator_a}]
+      end
+      let(:success) { Lowmu::ParallelTaskRunner::TaskSuccess.new(title: "Generating mastodon...", value: "/tmp/mastodon.txt") }
+      let(:run_result) { Lowmu::ParallelTaskRunner::Result.new(successes: [success], errors: []) }
+
       before do
-        allow(command).to receive(:call).and_return([
-          {key: "posts/my-post", target: "mastodon", file: "/tmp/lowmu/posts/my-post/mastodon.txt"},
-          {key: "posts/my-post", target: "linkedin-post", file: "/tmp/lowmu/posts/my-post/linkedin_post.md"}
-        ])
+        allow(command).to receive(:plan).and_return(planned)
+        allow(runner).to receive(:run).and_return(run_result)
       end
 
-      it "reports each generated result" do
-        expect { cli.generate }.to output(
-          /Generated mastodon for posts\/my-post.*Generated linkedin-post for posts\/my-post/m
-        ).to_stdout
+      it "does not print to stdout" do
+        expect { cli.generate }.not_to output.to_stdout
+      end
+
+      it "builds a runner with one task per planned item" do
+        cli.generate
+        expect(Lowmu::ParallelTaskRunner).to have_received(:new).with(
+          [hash_including(opts: hash_including(title: /mastodon/, done: /mastodon/))]
+        )
+      end
+    end
+
+    context "when some tasks fail" do
+      let(:error) { Lowmu::ParallelTaskRunner::TaskError.new(title: "Generating mastodon...", exception: RuntimeError.new("rate limit")) }
+      let(:run_result) { Lowmu::ParallelTaskRunner::Result.new(successes: [], errors: [error]) }
+      let(:planned) do
+        [{key: "posts/my-post", target: "mastodon", generator: instance_double(Lowmu::Generators::Mastodon)}]
+      end
+
+      before do
+        allow(command).to receive(:plan).and_return(planned)
+        allow(runner).to receive(:run).and_return(run_result)
+        allow(cli).to receive(:exit)
+      end
+
+      it "prints error details to stdout" do
+        expect { cli.generate }.to output(/rate limit/).to_stdout
+      end
+
+      it "exits with code 1" do
+        cli.generate
+        expect(cli).to have_received(:exit).with(1)
       end
     end
 
     context "when Lowmu::Error is raised" do
       before do
-        allow(command).to receive(:call).and_raise(Lowmu::Error, "no config")
+        allow(command).to receive(:plan).and_raise(Lowmu::Error, "no config")
         allow(cli).to receive(:exit)
       end
 

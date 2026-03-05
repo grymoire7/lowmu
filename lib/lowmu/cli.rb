@@ -20,16 +20,36 @@ module Lowmu
     method_option :target, aliases: "-t", type: :string, desc: "Specific target (default: all)"
     method_option :force, aliases: "-f", type: :boolean, desc: "Force regeneration"
     def generate(slug = nil)
-      results = Commands::Generate.new(
+      command = Commands::Generate.new(
         slug,
         target: options[:target],
         force: options[:force],
         config: Config.load
-      ).call
-      if results.empty?
+      )
+
+      planned = command.plan
+
+      if planned.empty?
         say "Nothing to generate." unless slug
-      else
-        results.each { |r| say "Generated #{r[:target]} for #{r[:key]}: #{r[:file]}" }
+        return
+      end
+
+      tasks = planned.map do |t|
+        {
+          opts: {
+            title: "Generating #{t[:target]} for #{t[:key]}...",
+            done: "Generated #{t[:target]} for #{t[:key]}"
+          },
+          block: -> { t[:generator].generate }
+        }
+      end
+
+      result = ParallelTaskRunner.new(tasks).run
+
+      if result.errors.any?
+        say "\nErrors:", :red
+        result.errors.each { |e| say "  #{e.title}: #{e.exception.message}", :red }
+        exit(1)
       end
     rescue Lowmu::Error => e
       error_exit(e.message)
