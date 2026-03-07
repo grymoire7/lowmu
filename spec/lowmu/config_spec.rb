@@ -29,7 +29,7 @@ RSpec.describe Lowmu::Config do
     end
 
     it "defaults to .lowmu when not specified" do
-      config = described_class.new({"hugo_content_dir" => "/tmp/hugo"})
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"]})
       expect(config.content_dir).to eq(File.expand_path(".lowmu"))
     end
   end
@@ -42,46 +42,35 @@ RSpec.describe Lowmu::Config do
   end
 
   describe "#targets" do
-    it "returns all configured targets" do
+    it "returns an array of type name strings" do
       config = described_class.load(fixture_path)
-      expect(config.targets.length).to eq(5)
-    end
-  end
-
-  describe "#target_config" do
-    it "returns the config hash for a known target" do
-      config = described_class.load(fixture_path)
-      target = config.target_config("mastodon")
-      expect(target["type"]).to eq("mastodon_short")
-    end
-
-    it "raises an error for an unknown target" do
-      config = described_class.load(fixture_path)
-      expect { config.target_config("nonexistent") }
-        .to raise_error(Lowmu::Error, /Unknown target/)
+      expect(config.targets).to contain_exactly(
+        "linkedin_long", "linkedin_short", "mastodon_short",
+        "substack_long", "substack_short"
+      )
     end
   end
 
   describe "#post_dirs" do
     it "defaults to ['posts']" do
-      config = described_class.new({"hugo_content_dir" => "/tmp/hugo"})
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"]})
       expect(config.post_dirs).to eq(["posts"])
     end
 
     it "returns configured value" do
-      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "post_dirs" => ["posts", "articles"]})
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"], "post_dirs" => ["posts", "articles"]})
       expect(config.post_dirs).to eq(["posts", "articles"])
     end
   end
 
   describe "#note_dirs" do
     it "defaults to ['notes']" do
-      config = described_class.new({"hugo_content_dir" => "/tmp/hugo"})
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"]})
       expect(config.note_dirs).to eq(["notes"])
     end
 
     it "returns configured value" do
-      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "note_dirs" => ["notes", "microblog"]})
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"], "note_dirs" => ["notes", "microblog"]})
       expect(config.note_dirs).to eq(["notes", "microblog"])
     end
   end
@@ -93,17 +82,19 @@ RSpec.describe Lowmu::Config do
     end
 
     it "does not raise when content_dir is missing (uses default)" do
-      expect { described_class.new({"hugo_content_dir" => "/tmp/hugo"}) }.not_to raise_error
+      expect { described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"]}) }.not_to raise_error
     end
 
-    it "raises when a target is missing the name key" do
-      data = {"hugo_content_dir" => "/tmp", "targets" => [{"type" => "hugo"}]}
-      expect { described_class.new(data) }.to raise_error(Lowmu::Error, /name/)
+    it "raises when a target type is not in the registry" do
+      data = {"hugo_content_dir" => "/tmp", "targets" => ["unknown_type"]}
+      expect { described_class.new(data) }
+        .to raise_error(Lowmu::Error, /Unknown target type: unknown_type/)
     end
 
-    it "raises when a target is missing the type key" do
-      data = {"hugo_content_dir" => "/tmp", "targets" => [{"name" => "myblog"}]}
-      expect { described_class.new(data) }.to raise_error(Lowmu::Error, /type/)
+    it "raises when targets list is empty" do
+      data = {"hugo_content_dir" => "/tmp", "targets" => []}
+      expect { described_class.new(data) }
+        .to raise_error(Lowmu::Error, /targets/)
     end
   end
 end

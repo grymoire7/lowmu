@@ -8,9 +8,6 @@ RSpec.describe Lowmu::Commands::Generate do
   let(:source_path) { File.join(post_dir, "index.md") }
   let(:note_source_path) { File.join(note_dir, "my-note.md") }
   let(:store) { Lowmu::ContentStore.new(content_dir) }
-
-  let(:mastodon_target) { {"name" => "mastodon", "type" => "mastodon_short"} }
-  let(:newsletter_target) { {"name" => "substack-long", "type" => "substack_long"} }
   let(:llm_config) { {"model" => "claude-opus-4-6"} }
 
   let(:config) do
@@ -20,14 +17,12 @@ RSpec.describe Lowmu::Commands::Generate do
       post_dirs: ["posts"],
       note_dirs: ["notes"],
       llm: llm_config,
-      targets: [mastodon_target, newsletter_target])
+      targets: ["mastodon_short", "substack_long"])
   end
 
   before do
     FileUtils.mkdir_p(post_dir)
     FileUtils.cp("spec/fixtures/sample_post.md", source_path)
-    allow(config).to receive(:target_config).with("mastodon").and_return(mastodon_target)
-    allow(config).to receive(:target_config).with("substack-long").and_return(newsletter_target)
   end
 
   after do
@@ -51,16 +46,12 @@ RSpec.describe Lowmu::Commands::Generate do
     File.utime(past, past, output)
   end
 
-  def mark_ignored(key)
-    File.write(File.join(content_dir, "ignore.yml"), [key].to_yaml)
-  end
-
   describe "#call" do
     context "with a pending post" do
       it "generates content for all configured targets" do
         mock_llm_response(content: "Generated output.")
         results = described_class.new(config: config).call
-        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-long")
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon_short", "substack_long")
       end
 
       it "includes the compound key in each result" do
@@ -86,14 +77,14 @@ RSpec.describe Lowmu::Commands::Generate do
         mock_llm_response(content: "Condensed #ruby")
         results = described_class.new(config: config).call
         note_results = results.select { |r| r[:key] == "short/my-note" }
-        expect(note_results.map { |r| r[:target] }).not_to include("substack-long")
+        expect(note_results.map { |r| r[:target] }).not_to include("substack_long")
       end
 
       it "includes short-form targets" do
         mock_llm_response(content: "Condensed #ruby")
         results = described_class.new(config: config).call
         note_results = results.select { |r| r[:key] == "short/my-note" }
-        expect(note_results.map { |r| r[:target] }).to include("mastodon")
+        expect(note_results.map { |r| r[:target] }).to include("mastodon_short")
       end
     end
 
@@ -139,25 +130,11 @@ RSpec.describe Lowmu::Commands::Generate do
       end
     end
 
-    context "with an ignored post" do
-      before { mark_ignored("long/my-post") }
-
-      it "skips it" do
-        results = described_class.new(config: config).call
-        expect(results).to be_empty
-      end
-
-      it "skips it even with --force" do
-        results = described_class.new(config: config, force: true).call
-        expect(results).to be_empty
-      end
-    end
-
     context "with --target filter" do
       it "generates only the specified target" do
         mock_llm_response(content: "output")
-        results = described_class.new(target: "mastodon", config: config).call
-        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon")
+        results = described_class.new(target: "mastodon_short", config: config).call
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon_short")
       end
 
       it "raises for an unknown target" do
@@ -172,7 +149,7 @@ RSpec.describe Lowmu::Commands::Generate do
     context "with a pending post" do
       it "returns one entry per applicable target" do
         results = described_class.new(config: config).plan
-        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon", "substack-long")
+        expect(results.map { |r| r[:target] }).to contain_exactly("mastodon_short", "substack_long")
       end
 
       it "includes the compound key in each entry" do

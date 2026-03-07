@@ -22,11 +22,6 @@ module Lowmu
       @note_dirs = data.fetch("note_dirs", ["notes"])
     end
 
-    def target_config(name)
-      targets.find { |t| t["name"] == name } ||
-        raise(Error, "Unknown target: #{name}")
-    end
-
     private
 
     def fetch!(data, key)
@@ -34,11 +29,13 @@ module Lowmu
     end
 
     def parse_targets(targets)
-      targets.map do |t|
-        raise Error, "Target missing required key: name" unless t["name"]
-        raise Error, "Target missing required key: type" unless t["type"]
-        t
+      raise Error, "Config must list at least one target under 'targets:'" if targets.empty?
+      targets.each do |type|
+        unless Generators.registry.key?(type.to_s)
+          raise Error, "Unknown target type: #{type}. Valid types: #{Generators.registry.keys.join(", ")}"
+        end
       end
+      targets.map(&:to_s)
     end
   end
 end

@@ -33,23 +33,21 @@ module Lowmu
 
       def plan_item(item)
         @store.ensure_slug_dir(item[:key])
-        applicable_targets(item[:content_type]).map do |target_name|
-          target_config = @config.target_config(target_name)
-          generator_class = generator_class_for(target_name)
+        applicable_targets(item[:content_type]).map do |type|
+          generator_class = generator_class_for(type)
           generator = generator_class.new(
             @store.slug_dir(item[:key]),
             item[:source_path],
             item[:content_type],
-            target_config,
+            {},
             @config.llm
           )
-          {key: item[:key], target: target_name, generator: generator}
+          {key: item[:key], target: type, generator: generator}
         end
       end
 
       def should_generate?(item)
         status = item_status(item)
-        return false if status == :ignore
         return true if @force
         if @key_filter
           status == :pending || status == :stale
@@ -72,26 +70,25 @@ module Lowmu
       end
 
       def applicable_targets(content_type)
-        resolve_targets.reject do |target_name|
-          content_type == :short && generator_class_for(target_name)::FORM == :long
+        resolve_targets.reject do |type|
+          content_type == :short && Generators.registry[type]::FORM == :long
         end
       end
 
-      def generator_class_for(target_name)
-        target_config = @config.target_config(target_name)
-        Generators.registry.fetch(target_config["type"]) do
-          raise Error, "Unknown target type: #{target_config["type"]}"
+      def generator_class_for(type)
+        Generators.registry.fetch(type) do
+          raise Error, "Unknown target type: #{type}"
         end
       end
 
       def resolve_targets
         if @target_filter
-          unless @config.targets.any? { |t| t["name"] == @target_filter }
+          unless @config.targets.include?(@target_filter)
             raise Error, "Unknown target: #{@target_filter}"
           end
           [@target_filter]
         else
-          @config.targets.map { |t| t["name"] }
+          @config.targets
         end
       end
 
