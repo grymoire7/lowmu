@@ -78,16 +78,5 @@ RSpec.describe Lowmu::Commands::Status do
         expect(results.first[:status]).to eq(:stale)
       end
     end
-
-    context "with an ignored item" do
-      before do
-        File.write(File.join(content_dir, "ignore.yml"), ["long/post-a"].to_yaml)
-      end
-
-      it "excludes ignored items from results" do
-        results = described_class.new(nil, config: config).call
-        expect(results.map { |r| r[:key] }).not_to include("long/post-a")
-      end
-    end
   end
 end

@@ -14,16 +14,6 @@ RSpec.describe Lowmu::SlugStatus do
   after { FileUtils.rm_rf(content_dir) }
 
   describe "#call" do
-    context "when key is in the ignore list" do
-      before do
-        File.write(File.join(content_dir, "ignore.yml"), ["posts/my-post"].to_yaml)
-      end
-
-      it "returns :ignore" do
-        expect(slug_status.call).to eq(:ignore)
-      end
-    end
-
     context "when no generated files exist" do
       it "returns :pending" do
         expect(slug_status.call).to eq(:pending)

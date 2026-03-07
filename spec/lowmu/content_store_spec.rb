@@ -29,17 +29,6 @@ RSpec.describe Lowmu::ContentStore do
     end
   end
 
-  describe "#ignore_slugs" do
-    it "returns empty array when ignore.yml does not exist" do
-      expect(store.ignore_slugs).to eq([])
-    end
-
-    it "returns compound keys listed in ignore.yml" do
-      File.write(File.join(base_dir, "ignore.yml"), ["posts/post-a", "notes/note-b"].to_yaml)
-      expect(store.ignore_slugs).to contain_exactly("posts/post-a", "notes/note-b")
-    end
-  end
-
   describe "#slugs" do
     it "returns all compound keys sorted" do
       store.ensure_slug_dir("posts/post-b")

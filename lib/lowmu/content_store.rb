@@ -1,7 +1,5 @@
 module Lowmu
   class ContentStore
-    IGNORE_FILE = "ignore.yml"
-
     attr_reader :base_dir
 
     def initialize(base_dir)
@@ -18,12 +16,6 @@ module Lowmu
 
     def ensure_slug_dir(key)
       FileUtils.mkdir_p(slug_dir(key))
-    end
-
-    def ignore_slugs
-      path = File.join(base_dir, IGNORE_FILE)
-      return [] unless File.exist?(path)
-      YAML.safe_load_file(path) || []
     end
 
     def slugs

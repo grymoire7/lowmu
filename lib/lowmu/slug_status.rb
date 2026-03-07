@@ -7,8 +7,6 @@ module Lowmu
     end
 
     def call
-      return :ignore if @content_store.ignore_slugs.include?(@key)
-
       slug_dir = @content_store.slug_dir(@key)
       return :pending unless Dir.exist?(slug_dir)
 

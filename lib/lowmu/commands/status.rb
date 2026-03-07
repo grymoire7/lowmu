@@ -15,9 +15,8 @@ module Lowmu
         ).scan
         items = items.select { |item| item[:key] == @key_filter } if @key_filter
 
-        items.filter_map do |item|
+        items.map do |item|
           status = SlugStatus.new(item[:key], item[:source_path], @store).call
-          next if status == :ignore
           {key: item[:key], status: status}
         end
       end
