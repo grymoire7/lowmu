@@ -1,15 +1,19 @@
 module Lowmu
   module Commands
     class Generate
-      def initialize(key_filter = nil, config:, target: nil, force: false)
+      def initialize(key_filter = nil, config:, target: nil, force: false, recent: nil)
         @key_filter = key_filter
         @target_filter = target
         @force = force
+        @recent = recent
         @config = config
         @store = ContentStore.new(config.content_dir)
       end
 
       def plan
+        unless @key_filter || @recent
+          raise Error, "Specify a slug or use --recent DURATION to limit scope (e.g. --recent 1w)."
+        end
         configure_llm
         items = HugoScanner.new(
           @config.hugo_content_dir,
@@ -17,6 +21,7 @@ module Lowmu
           note_dirs: @config.note_dirs
         ).scan
         items = items.select { |item| item[:key] == @key_filter } if @key_filter
+        items = filter_by_recent(items) if @recent
         warn_stale(items)
         items.select { |item| should_generate?(item) }
           .flat_map { |item| plan_item(item) }
@@ -90,6 +95,12 @@ module Lowmu
         else
           @config.targets
         end
+      end
+
+      def filter_by_recent(items)
+        duration = DurationParser.parse(@recent)
+        cutoff = Time.now - duration
+        items.select { |item| File.mtime(item[:source_path]) >= cutoff }
       end
 
       def configure_llm

@@ -46,23 +46,43 @@ RSpec.describe Lowmu::Commands::Generate do
     File.utime(past, past, output)
   end
 
+  describe "scope guard" do
+    it "raises when called with no slug and no --recent" do
+      expect {
+        described_class.new(config: config).plan
+      }.to raise_error(Lowmu::Error, /--recent/)
+    end
+
+    it "does not raise when a slug is given" do
+      expect {
+        described_class.new("long/my-post", config: config).plan
+      }.not_to raise_error
+    end
+
+    it "does not raise when --recent is given" do
+      expect {
+        described_class.new(config: config, recent: "1w").plan
+      }.not_to raise_error
+    end
+  end
+
   describe "#call" do
     context "with a pending post" do
       it "generates content for all configured targets" do
         mock_llm_response(content: "Generated output.")
-        results = described_class.new(config: config).call
+        results = described_class.new(config: config, recent: "1w").call
         expect(results.map { |r| r[:target] }).to contain_exactly("mastodon_short", "substack_long")
       end
 
       it "includes the compound key in each result" do
         mock_llm_response(content: "output")
-        results = described_class.new(config: config).call
+        results = described_class.new(config: config, recent: "1w").call
         expect(results.map { |r| r[:key] }).to all(eq("long/my-post"))
       end
 
       it "creates the key output directory" do
         mock_llm_response(content: "output")
-        described_class.new(config: config).call
+        described_class.new(config: config, recent: "1w").call
         expect(Dir.exist?(store.slug_dir("long/my-post"))).to be true
       end
     end
@@ -75,14 +95,14 @@ RSpec.describe Lowmu::Commands::Generate do
 
       it "skips long-form targets" do
         mock_llm_response(content: "Condensed #ruby")
-        results = described_class.new(config: config).call
+        results = described_class.new(config: config, recent: "1w").call
         note_results = results.select { |r| r[:key] == "short/my-note" }
         expect(note_results.map { |r| r[:target] }).not_to include("substack_long")
       end
 
       it "includes short-form targets" do
         mock_llm_response(content: "Condensed #ruby")
-        results = described_class.new(config: config).call
+        results = described_class.new(config: config, recent: "1w").call
         note_results = results.select { |r| r[:key] == "short/my-note" }
         expect(note_results.map { |r| r[:target] }).to include("mastodon_short")
       end
@@ -92,13 +112,13 @@ RSpec.describe Lowmu::Commands::Generate do
       before { mark_generated("long/my-post") }
 
       it "skips it" do
-        results = described_class.new(config: config).call
+        results = described_class.new(config: config, recent: "1w").call
         expect(results).to be_empty
       end
 
       it "regenerates with --force" do
         mock_llm_response(content: "output")
-        results = described_class.new(config: config, force: true).call
+        results = described_class.new(config: config, force: true, recent: "1w").call
         expect(results).not_to be_empty
       end
     end
@@ -108,12 +128,12 @@ RSpec.describe Lowmu::Commands::Generate do
 
       it "does not generate without explicit key or --force" do
         results = nil
-        expect { results = described_class.new(config: config).call }.to output.to_stderr
+        expect { results = described_class.new(config: config, recent: "1w").call }.to output.to_stderr
         expect(results).to be_empty
       end
 
       it "warns about stale content to stderr" do
-        expect { described_class.new(config: config).call }
+        expect { described_class.new(config: config, recent: "1w").call }
           .to output(/stale.*long\/my-post/i).to_stderr
       end
 
@@ -125,7 +145,7 @@ RSpec.describe Lowmu::Commands::Generate do
 
       it "generates with --force" do
         mock_llm_response(content: "output")
-        results = described_class.new(config: config, force: true).call
+        results = described_class.new(config: config, force: true, recent: "1w").call
         expect(results).not_to be_empty
       end
     end
@@ -133,14 +153,28 @@ RSpec.describe Lowmu::Commands::Generate do
     context "with --target filter" do
       it "generates only the specified target" do
         mock_llm_response(content: "output")
-        results = described_class.new(target: "mastodon_short", config: config).call
+        results = described_class.new("long/my-post", target: "mastodon_short", config: config).call
         expect(results.map { |r| r[:target] }).to contain_exactly("mastodon_short")
       end
 
       it "raises for an unknown target" do
         expect {
-          described_class.new(target: "unknown", config: config).call
+          described_class.new("long/my-post", target: "unknown", config: config).call
         }.to raise_error(Lowmu::Error, /Unknown target/)
+      end
+    end
+
+    context "with --recent filter" do
+      it "only generates for items modified within the duration" do
+        old = Time.now - (10 * 86_400)
+        File.utime(old, old, source_path)
+        results = described_class.new(config: config, recent: "3d").plan
+        expect(results).to be_empty
+      end
+
+      it "generates for items modified within the duration" do
+        results = described_class.new(config: config, recent: "1w").plan
+        expect(results.map { |r| r[:key] }).to include("long/my-post")
       end
     end
   end
@@ -148,22 +182,22 @@ RSpec.describe Lowmu::Commands::Generate do
   describe "#plan" do
     context "with a pending post" do
       it "returns one entry per applicable target" do
-        results = described_class.new(config: config).plan
+        results = described_class.new(config: config, recent: "1w").plan
         expect(results.map { |r| r[:target] }).to contain_exactly("mastodon_short", "substack_long")
       end
 
       it "includes the compound key in each entry" do
-        results = described_class.new(config: config).plan
+        results = described_class.new(config: config, recent: "1w").plan
         expect(results.map { |r| r[:key] }).to all(eq("long/my-post"))
       end
 
       it "includes a generator instance in each entry" do
-        results = described_class.new(config: config).plan
+        results = described_class.new(config: config, recent: "1w").plan
         expect(results.map { |r| r[:generator] }).to all(respond_to(:generate))
       end
 
       it "creates the key output directory" do
-        described_class.new(config: config).plan
+        described_class.new(config: config, recent: "1w").plan
         expect(Dir.exist?(store.slug_dir("long/my-post"))).to be true
       end
     end
@@ -172,7 +206,7 @@ RSpec.describe Lowmu::Commands::Generate do
       before { mark_generated("long/my-post") }
 
       it "returns empty" do
-        expect(described_class.new(config: config).plan).to be_empty
+        expect(described_class.new(config: config, recent: "1w").plan).to be_empty
       end
     end
   end
