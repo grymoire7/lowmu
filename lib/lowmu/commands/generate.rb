@@ -66,7 +66,7 @@ module Lowmu
 
       def item_status(item)
         @status_cache ||= {}
-        @status_cache[item[:key]] ||= SlugStatus.new(item[:key], item[:source_path], @store).call
+        @status_cache[item[:key]] ||= InputStatus.new(item, @config.targets, @store).aggregate
       end
 
       def applicable_targets(content_type)

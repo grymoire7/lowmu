@@ -16,7 +16,7 @@ module Lowmu
         items = items.select { |item| item[:key] == @key_filter } if @key_filter
 
         items.map do |item|
-          status = SlugStatus.new(item[:key], item[:source_path], @store).call
+          status = InputStatus.new(item, @config.targets, @store).aggregate
           {key: item[:key], status: status}
         end
       end

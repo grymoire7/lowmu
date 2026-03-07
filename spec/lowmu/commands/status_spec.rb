@@ -10,7 +10,8 @@ RSpec.describe Lowmu::Commands::Status do
       hugo_content_dir: hugo_content_dir,
       content_dir: content_dir,
       post_dirs: ["posts"],
-      note_dirs: ["notes"])
+      note_dirs: ["notes"],
+      targets: ["mastodon_short", "substack_long"])
   end
 
   let(:source_a) { File.join(hugo_content_dir, "posts", "post-a", "index.md") }
@@ -49,18 +50,19 @@ RSpec.describe Lowmu::Commands::Status do
       end
     end
 
-    context "with a generated item" do
+    context "with a done item" do
       before do
         store.ensure_slug_dir("long/post-a")
-        output = File.join(store.slug_dir("long/post-a"), "mastodon_short.md")
-        File.write(output, "generated content")
+        ["mastodon_short.md", "substack_long.md"].each do |filename|
+          File.write(File.join(store.slug_dir("long/post-a"), filename), "generated content")
+        end
         past = Time.now - 60
         File.utime(past, past, source_a)
       end
 
-      it "returns :generated status" do
+      it "returns :done status" do
         results = described_class.new("long/post-a", config: config).call
-        expect(results.first[:status]).to eq(:generated)
+        expect(results.first[:status]).to eq(:done)
       end
     end
 
