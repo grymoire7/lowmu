@@ -147,7 +147,9 @@ RSpec.describe Lowmu::CLI do
     end
 
     context "when no content is found" do
-      before { allow(command).to receive(:call).and_return([]) }
+      before do
+        allow(command).to receive(:call).and_return({targets: [], rows: []})
+      end
 
       it "says no content found" do
         expect { cli.status }.to output(/No content found/).to_stdout
@@ -156,16 +158,33 @@ RSpec.describe Lowmu::CLI do
 
     context "when content exists" do
       before do
-        allow(command).to receive(:call).and_return([
-          {key: "posts/my-post", status: :pending},
-          {key: "notes/other-note", status: :generated}
-        ])
+        allow(command).to receive(:call).and_return({
+          targets: ["mastodon_short"],
+          rows: [
+            {key: "long/my-post", statuses: {"mastodon_short" => :done}},
+            {key: "short/note", statuses: {"mastodon_short" => :pending}}
+          ]
+        })
       end
 
-      it "prints each key with its status" do
-        expect { cli.status }.to output(
-          /posts\/my-post: pending.*notes\/other-note: generated/m
-        ).to_stdout
+      it "prints the input column header" do
+        expect { cli.status }.to output(/input/).to_stdout
+      end
+
+      it "prints target column headers" do
+        expect { cli.status }.to output(/mastodon\/short/).to_stdout
+      end
+
+      it "prints the done symbol for done status" do
+        expect { cli.status }.to output(/✓/).to_stdout
+      end
+
+      it "prints the pending symbol for pending status" do
+        expect { cli.status }.to output(/◯/).to_stdout
+      end
+
+      it "prints the legend" do
+        expect { cli.status }.to output(/done.*pending/m).to_stdout
       end
     end
 

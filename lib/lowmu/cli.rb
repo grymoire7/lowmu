@@ -1,5 +1,12 @@
 module Lowmu
   class CLI < Thor
+    SYMBOLS = {
+      done: "✓",
+      pending: "◯",
+      stale: "⏱",
+      not_applicable: "✗"
+    }.freeze
+
     def self.exit_on_failure?
       true
     end
@@ -60,14 +67,33 @@ module Lowmu
       error_exit(e.message)
     end
 
-    desc "status [SLUG]", "Report generation status"
+    desc "status [SLUG]", "Report generation status per target"
+    method_option :all, type: :boolean, desc: "Show all inputs (default)"
+    method_option :pending, type: :boolean, desc: "At least one output is pending"
+    method_option :no_pending, type: :boolean, desc: "No pending outputs"
+    method_option :recent, type: :string, desc: "At least one output within duration (e.g. 1w, 3d)"
+    method_option :done, type: :boolean, desc: "All applicable outputs are done"
+    method_option :partial, type: :boolean, desc: "Some but not all outputs are done"
+    method_option :stale, type: :boolean, desc: "At least one output is stale"
+    method_option :no_stale, type: :boolean, desc: "No stale outputs"
     def status(slug = nil)
-      results = Commands::Status.new(slug, config: Config.load).call
-      if results.empty?
+      filters = {}
+      filters[:pending] = true if options[:pending]
+      filters[:no_pending] = true if options[:no_pending]
+      filters[:done] = true if options[:done]
+      filters[:partial] = true if options[:partial]
+      filters[:stale] = true if options[:stale]
+      filters[:no_stale] = true if options[:no_stale]
+      filters[:recent] = options[:recent] if options[:recent]
+
+      result = Commands::Status.new(slug, config: Config.load, filters: filters).call
+
+      if result[:rows].empty?
         say "No content found."
-      else
-        results.each { |entry| say "#{entry[:key]}: #{entry[:status]}" }
+        return
       end
+
+      render_status_table(result)
     rescue Lowmu::Error => e
       error_exit(e.message)
     end
@@ -77,6 +103,36 @@ module Lowmu
     end
 
     private
+
+    def render_status_table(result)
+      targets = result[:targets]
+      rows = result[:rows]
+
+      target_headers = targets.map { |t| t.sub("_", "/") }
+      headers = ["input"] + target_headers
+
+      col_widths = headers.map(&:length)
+      rows.each do |row|
+        col_widths[0] = [col_widths[0], row[:key].length].max
+      end
+
+      header_line = headers.each_with_index.map { |h, i| h.ljust(col_widths[i]) }.join(" | ")
+      separator = col_widths.map { |w| "-" * w }.join("-+-")
+      say "| #{header_line} |"
+      say "+-#{separator}-+"
+
+      rows.each do |row|
+        cells = [row[:key].ljust(col_widths[0])]
+        targets.each_with_index do |type, i|
+          sym = SYMBOLS.fetch(row[:statuses][type], "?")
+          cells << sym.center(col_widths[i + 1])
+        end
+        say "| #{cells.join(" | ")} |"
+      end
+
+      say ""
+      say "#{SYMBOLS[:done]} done  #{SYMBOLS[:pending]} pending  #{SYMBOLS[:not_applicable]} not applicable  #{SYMBOLS[:stale]} stale"
+    end
 
     def error_exit(message)
       say "Error: #{message}", :red
