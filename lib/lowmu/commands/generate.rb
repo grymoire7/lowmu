@@ -1,14 +1,6 @@
 module Lowmu
   module Commands
     class Generate
-      GENERATOR_MAP = {
-        "substack_long" => Generators::SubstackLong,
-        "substack_short" => Generators::SubstackShort,
-        "mastodon_short" => Generators::MastodonShort,
-        "linkedin_short" => Generators::LinkedinShort,
-        "linkedin_long" => Generators::LinkedinLong
-      }.freeze
-
       def initialize(key_filter = nil, config:, target: nil, force: false)
         @key_filter = key_filter
         @target_filter = target
@@ -87,7 +79,7 @@ module Lowmu
 
       def generator_class_for(target_name)
         target_config = @config.target_config(target_name)
-        GENERATOR_MAP.fetch(target_config["type"]) do
+        Generators.registry.fetch(target_config["type"]) do
           raise Error, "Unknown target type: #{target_config["type"]}"
         end
       end

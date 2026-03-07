@@ -1,5 +1,24 @@
 require "spec_helper"
 
+RSpec.describe Lowmu::Generators do
+  describe ".registry" do
+    it "returns a hash with all expected type keys" do
+      expect(described_class.registry.keys).to contain_exactly(
+        "substack_long", "substack_short", "mastodon_short",
+        "linkedin_short", "linkedin_long"
+      )
+    end
+
+    it "maps each key to a class with FORM and OUTPUT_FILE" do
+      described_class.registry.each_value do |klass|
+        expect(klass).to respond_to(:const_get)
+        expect([:long, :short]).to include(klass::FORM)
+        expect(klass::OUTPUT_FILE).to be_a(String)
+      end
+    end
+  end
+end
+
 RSpec.describe Lowmu::Generators::Base do
   let(:slug_dir) { Dir.mktmpdir("lowmu_base_test") }
   let(:source_path) { "spec/fixtures/sample_post.md" }
