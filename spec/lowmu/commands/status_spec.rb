@@ -29,55 +29,107 @@ RSpec.describe Lowmu::Commands::Status do
     FileUtils.rm_rf(content_dir)
   end
 
+  def write_output(key, filename, mtime: nil)
+    store.ensure_slug_dir(key)
+    path = File.join(store.slug_dir(key), filename)
+    File.write(path, "generated")
+    File.utime(mtime, mtime, path) if mtime
+  end
+
+  def call(filters = {})
+    described_class.new(nil, config: config, filters: filters).call
+  end
+
   describe "#call" do
-    context "without a key filter" do
-      it "returns an entry for every discovered item" do
-        results = described_class.new(nil, config: config).call
-        expect(results.map { |r| r[:key] }).to contain_exactly("long/post-a", "short/post-b")
-      end
-
-      it "reports :pending for new items" do
-        results = described_class.new(nil, config: config).call
-        expect(results.map { |r| r[:status] }).to all(eq(:pending))
-      end
+    it "returns all targets as column headers" do
+      expect(call[:targets]).to eq(["mastodon_short", "substack_long"])
     end
 
-    context "with a specific key filter" do
-      it "returns only that item's entry" do
-        results = described_class.new("long/post-a", config: config).call
-        expect(results.length).to eq(1)
-        expect(results.first[:key]).to eq("long/post-a")
-      end
+    it "returns a row for every discovered item with no filter" do
+      result = call
+      expect(result[:rows].map { |r| r[:key] }).to contain_exactly("long/post-a", "short/post-b")
     end
 
-    context "with a done item" do
-      before do
-        store.ensure_slug_dir("long/post-a")
-        ["mastodon_short.md", "substack_long.md"].each do |filename|
-          File.write(File.join(store.slug_dir("long/post-a"), filename), "generated content")
-        end
-        past = Time.now - 60
+    it "marks substack_long as :not_applicable for short content" do
+      result = call
+      short_row = result[:rows].find { |r| r[:key] == "short/post-b" }
+      expect(short_row[:statuses]["substack_long"]).to eq(:not_applicable)
+    end
+
+    context "with --pending filter" do
+      it "includes items with at least one pending target" do
+        result = call(pending: true)
+        expect(result[:rows].map { |r| r[:key] }).to include("long/post-a")
+      end
+
+      it "excludes fully done items" do
+        past = Time.now - 120
         File.utime(past, past, source_a)
-      end
-
-      it "returns :done status" do
-        results = described_class.new("long/post-a", config: config).call
-        expect(results.first[:status]).to eq(:done)
+        write_output("long/post-a", "mastodon_short.md")
+        write_output("long/post-a", "substack_long.md")
+        result = call(pending: true)
+        expect(result[:rows].map { |r| r[:key] }).not_to include("long/post-a")
       end
     end
 
-    context "with a stale item" do
-      before do
-        store.ensure_slug_dir("long/post-a")
-        output = File.join(store.slug_dir("long/post-a"), "mastodon_short.md")
-        File.write(output, "generated content")
-        past = Time.now - 60
-        File.utime(past, past, output)
+    context "with --done filter" do
+      it "includes items where all applicable outputs are done" do
+        past = Time.now - 120
+        File.utime(past, past, source_a)
+        write_output("long/post-a", "mastodon_short.md")
+        write_output("long/post-a", "substack_long.md")
+        result = call(done: true)
+        expect(result[:rows].map { |r| r[:key] }).to include("long/post-a")
       end
 
-      it "returns :stale status" do
-        results = described_class.new("long/post-a", config: config).call
-        expect(results.first[:status]).to eq(:stale)
+      it "excludes pending items" do
+        result = call(done: true)
+        expect(result[:rows]).to be_empty
+      end
+    end
+
+    context "with --stale filter" do
+      it "includes items with at least one stale output" do
+        past = Time.now - 120
+        write_output("long/post-a", "mastodon_short.md", mtime: past)
+        result = call(stale: true)
+        expect(result[:rows].map { |r| r[:key] }).to include("long/post-a")
+      end
+    end
+
+    context "with --no-stale filter" do
+      it "excludes items with any stale output" do
+        past = Time.now - 120
+        write_output("long/post-a", "mastodon_short.md", mtime: past)
+        result = call(no_stale: true)
+        expect(result[:rows].map { |r| r[:key] }).not_to include("long/post-a")
+      end
+    end
+
+    context "with --recent filter" do
+      it "includes items with output created within the duration" do
+        write_output("long/post-a", "mastodon_short.md")
+        result = call(recent: "1w")
+        expect(result[:rows].map { |r| r[:key] }).to include("long/post-a")
+      end
+
+      it "excludes items whose output is older than the duration" do
+        old = Time.now - (10 * 86_400)
+        write_output("long/post-a", "mastodon_short.md", mtime: old)
+        result = call(recent: "3d")
+        expect(result[:rows].map { |r| r[:key] }).not_to include("long/post-a")
+      end
+
+      it "excludes items with no output at all" do
+        result = call(recent: "1w")
+        expect(result[:rows].map { |r| r[:key] }).not_to include("long/post-a")
+      end
+    end
+
+    context "with a key filter (specific slug)" do
+      it "returns only that item" do
+        result = described_class.new("long/post-a", config: config, filters: {}).call
+        expect(result[:rows].map { |r| r[:key] }).to contain_exactly("long/post-a")
       end
     end
   end
