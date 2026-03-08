@@ -101,6 +101,23 @@ module Lowmu
       error_exit(e.message)
     end
 
+    desc "brainstorm", "Generate content ideas from configured sources"
+    method_option :form, type: :string, default: "long", desc: "Idea form: long or short"
+    method_option :num, type: :numeric, default: 5, desc: "Number of ideas to generate"
+    method_option :rescan, type: :boolean, desc: "Ignore state and reprocess all source items"
+    def brainstorm
+      files = Commands::Brainstorm.new(
+        config: Config.load,
+        form: options[:form],
+        num: options[:num],
+        rescan: options[:rescan]
+      ).call
+      say "Generated #{files.count} idea#{"s" unless files.count == 1}:"
+      files.each { |f| say "  #{f}" }
+    rescue Lowmu::Error => e
+      error_exit(e.message)
+    end
+
     def self.printable_commands(all = true, subcommand = false)
       super.reject { |cmd| cmd.first.match?(/\btree\b/) }
     end

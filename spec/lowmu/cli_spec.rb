@@ -213,6 +213,69 @@ RSpec.describe Lowmu::CLI do
     end
   end
 
+  describe "brainstorm" do
+    let(:config) do
+      instance_double(Lowmu::Config,
+        hugo_content_dir: Dir.mktmpdir,
+        content_dir: Dir.mktmpdir,
+        llm: {"model" => "claude-opus-4-6"},
+        persona: "I write about software.",
+        sources: [])
+    end
+
+    before do
+      allow(Lowmu::Config).to receive(:load).and_return(config)
+    end
+
+    it "reports the number of generated ideas" do
+      allow(Lowmu::Commands::Brainstorm).to receive(:new).and_return(
+        instance_double(Lowmu::Commands::Brainstorm, call: ["long-idea-one.md", "long-idea-two.md"])
+      )
+      expect { Lowmu::CLI.start(["brainstorm"]) }.to output(/Generated 2 ideas/).to_stdout
+    end
+
+    it "uses singular when one idea is generated" do
+      allow(Lowmu::Commands::Brainstorm).to receive(:new).and_return(
+        instance_double(Lowmu::Commands::Brainstorm, call: ["long-idea-one.md"])
+      )
+      expect { Lowmu::CLI.start(["brainstorm"]) }.to output(/Generated 1 idea\b/).to_stdout
+    end
+
+    it "lists the generated filenames" do
+      allow(Lowmu::Commands::Brainstorm).to receive(:new).and_return(
+        instance_double(Lowmu::Commands::Brainstorm, call: ["long-idea-one.md"])
+      )
+      expect { Lowmu::CLI.start(["brainstorm"]) }.to output(/long-idea-one\.md/).to_stdout
+    end
+
+    it "passes --form to the command" do
+      cmd_double = instance_double(Lowmu::Commands::Brainstorm, call: ["short-idea.md"])
+      expect(Lowmu::Commands::Brainstorm).to receive(:new).with(hash_including(form: "short")).and_return(cmd_double)
+      Lowmu::CLI.start(["brainstorm", "--form", "short"])
+    end
+
+    it "passes --num to the command" do
+      cmd_double = instance_double(Lowmu::Commands::Brainstorm, call: [])
+      expect(Lowmu::Commands::Brainstorm).to receive(:new).with(hash_including(num: 3)).and_return(cmd_double)
+      Lowmu::CLI.start(["brainstorm", "--num", "3"])
+    end
+
+    it "passes --rescan to the command" do
+      cmd_double = instance_double(Lowmu::Commands::Brainstorm, call: [])
+      expect(Lowmu::Commands::Brainstorm).to receive(:new).with(hash_including(rescan: true)).and_return(cmd_double)
+      Lowmu::CLI.start(["brainstorm", "--rescan"])
+    end
+
+    it "prints an error on Lowmu::Error" do
+      allow(Lowmu::Commands::Brainstorm).to receive(:new).and_return(
+        instance_double(Lowmu::Commands::Brainstorm, call: nil).tap do |d|
+          allow(d).to receive(:call).and_raise(Lowmu::Error, "No new source items found.")
+        end
+      )
+      expect { Lowmu::CLI.start(["brainstorm"]) }.to output(/No new source items found/).to_stdout.and raise_error(SystemExit)
+    end
+  end
+
   describe ".printable_commands" do
     it "does not list the tree command" do
       cmd_names = described_class.printable_commands.map(&:first)
