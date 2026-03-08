@@ -13,19 +13,10 @@ llm:
   model: claude-opus-4-6
 
 # Generation targets (no auth needed — you post manually)
+# Valid types: linkedin_long, linkedin_short, substack_long, substack_short, mastodon_short
 targets:
-  - name: linkedin-long
-    type: linkedin_long
-
-  - name: linkedin-short
-    type: linkedin_short
-
-  - name: substack-long
-    type: substack_long
-
-  - name: substack-short
-    type: substack_short
-
-  - name: mastodon
-    type: mastodon_short
-    base_url: https://mastodon.social
+  - linkedin_long
+  - linkedin_short
+  - substack_long
+  - substack_short
+  - mastodon_short
