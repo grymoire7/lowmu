@@ -66,44 +66,41 @@ llm:
   model: claude-sonnet-4-6
 
 # Generation targets (no auth needed — you post manually)
+# Valid types: linkedin_long, linkedin_short, substack_long, substack_short, mastodon_short
 targets:
-  - name: substack-newsletter
-    type: substack_newsletter
-
-  - name: substack-note
-    type: substack_note
-
-  - name: mastodon
-    type: mastodon
-    base_url: https://mastodon.social
-
-  - name: linkedin-post
-    type: linkedin_post
-
-  - name: linkedin-article
-    type: linkedin_article
+  - linkedin_long
+  - linkedin_short
+  - substack_long
+  - substack_short
+  - mastodon_short
 ```
 
 ## Usage
 
 ```bash
-# Check generation status of all posts
+# Check generation status for all posts (tabular view per target)
 lowmu status
 
-# Check status of a specific post
-lowmu status posts/my-post-slug
+# Filter status output
+lowmu status --pending        # at least one output pending
+lowmu status --done           # all applicable outputs done
+lowmu status --stale          # at least one output stale
+lowmu status --recent 1w      # source or output touched within 1 week
 
-# Generate platform content for all posts
-lowmu generate
+# Check status of a specific post
+lowmu status long/my-post-slug
 
 # Generate for a specific post
-lowmu generate posts/my-post-slug
+lowmu generate long/my-post-slug
+
+# Generate for posts modified in the last week
+lowmu generate --recent 1w
 
 # Generate for a specific target only
-lowmu generate posts/my-post-slug --target mastodon
+lowmu generate long/my-post-slug --target mastodon_short
 
 # Force regeneration even if already generated
-lowmu generate posts/my-post-slug --force
+lowmu generate long/my-post-slug --force
 ```
 
 Generated files are written to `content_dir/generated/<section>/<slug>/` for review before publishing.
