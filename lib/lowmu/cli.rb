@@ -24,13 +24,16 @@ module Lowmu
     end
 
     desc "generate [SLUG]", "Generate platform content from Hugo source"
-    method_option :target, aliases: "-t", type: :string, desc: "Specific target (default: all)"
+    method_option :target, aliases: "-t", type: :string,
+      desc: "Target type. Available: substack_long, substack_short, mastodon_short, linkedin_short, linkedin_long"
     method_option :force, aliases: "-f", type: :boolean, desc: "Force regeneration"
+    method_option :recent, type: :string, desc: "Only generate for sources modified within duration (e.g. 1w, 3d)"
     def generate(slug = nil)
       command = Commands::Generate.new(
         slug,
         target: options[:target],
         force: options[:force],
+        recent: options[:recent],
         config: Config.load
       )
 

@@ -135,6 +135,18 @@ RSpec.describe Lowmu::CLI do
         expect(cli).to have_received(:exit).with(1)
       end
     end
+
+    context "when no slug and no --recent given" do
+      before do
+        allow(command).to receive(:plan).and_raise(Lowmu::Error, "Specify a slug or use --recent")
+        allow(cli).to receive(:exit)
+      end
+
+      it "prints the error and exits" do
+        expect { cli.generate }.to output(/Specify a slug or use --recent/).to_stdout
+        expect(cli).to have_received(:exit).with(1)
+      end
+    end
   end
 
   describe "#status" do
