@@ -14,3 +14,14 @@ targets:
   - mastodon_short
   - substack_long
   - substack_short
+
+persona: |
+  I write about software engineering and developer tools.
+
+sources:
+  - type: rss
+    url: https://example.com/feed.xml
+    name: example-blog
+  - type: file
+    path: ~/notes/ideas.md
+    name: my-ideas

@@ -75,6 +75,32 @@ RSpec.describe Lowmu::Config do
     end
   end
 
+  describe "#persona" do
+    it "returns the persona string" do
+      config = described_class.load(fixture_path)
+      expect(config.persona).to include("software engineering")
+    end
+
+    it "defaults to nil when not set" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"]})
+      expect(config.persona).to be_nil
+    end
+  end
+
+  describe "#sources" do
+    it "returns an array of source hashes" do
+      config = described_class.load(fixture_path)
+      expect(config.sources.length).to eq(2)
+      expect(config.sources.first["type"]).to eq("rss")
+      expect(config.sources.first["name"]).to eq("example-blog")
+    end
+
+    it "defaults to empty array when not set" do
+      config = described_class.new({"hugo_content_dir" => "/tmp/hugo", "targets" => ["mastodon_short"]})
+      expect(config.sources).to eq([])
+    end
+  end
+
   describe "validation" do
     it "raises when hugo_content_dir is missing" do
       expect { described_class.new({}) }
