@@ -15,4 +15,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "zeitwerk", "~> 2.7"
   spec.add_dependency "front_matter_parser", "~> 1.0"
   spec.add_dependency "tty-spinner", "~> 0.9"
+  spec.add_dependency "rss", "~> 0.3"
 end

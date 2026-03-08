@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example Blog</title>
+    <link>https://example.com</link>
+    <description>An example blog</description>
+    <item>
+      <title>First Post About Ruby</title>
+      <link>https://example.com/first-post</link>
+      <guid>https://example.com/first-post</guid>
+      <description><![CDATA[Ruby is a great language for building tools. It has a clean syntax and a rich ecosystem of gems that make development enjoyable.]]></description>
+    </item>
+    <item>
+      <title>Second Post About Testing</title>
+      <link>https://example.com/second-post</link>
+      <guid>https://example.com/second-post</guid>
+      <description><![CDATA[Testing is essential for software quality. RSpec makes it easy to write expressive tests in Ruby.]]></description>
+    </item>
+  </channel>
+</rss>
