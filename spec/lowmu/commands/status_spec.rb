@@ -120,8 +120,15 @@ RSpec.describe Lowmu::Commands::Status do
         expect(result[:rows].map { |r| r[:key] }).not_to include("long/post-a")
       end
 
-      it "excludes items with no output at all" do
+      it "includes items with no output but recently modified source" do
         result = call(recent: "1w")
+        expect(result[:rows].map { |r| r[:key] }).to include("long/post-a")
+      end
+
+      it "excludes items with no output and old source" do
+        old = Time.now - (10 * 86_400)
+        File.utime(old, old, source_a)
+        result = call(recent: "3d")
         expect(result[:rows].map { |r| r[:key] }).not_to include("long/post-a")
       end
     end

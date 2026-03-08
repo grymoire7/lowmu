@@ -18,7 +18,7 @@ module Lowmu
 
         rows = items.map do |item|
           statuses = InputStatus.new(item, @config.targets, @store).call
-          {key: item[:key], statuses: statuses}
+          {key: item[:key], source_path: item[:source_path], statuses: statuses}
         end
 
         {targets: @config.targets, rows: filter(rows)}
@@ -55,10 +55,14 @@ module Lowmu
       def recent_match?(row)
         duration = DurationParser.parse(@filters[:recent])
         cutoff = Time.now - duration
-        @config.targets.any? do |type|
-          generator_class = Generators.registry[type]
-          output_path = File.join(@store.slug_dir(row[:key]), generator_class::OUTPUT_FILE)
-          File.exist?(output_path) && File.mtime(output_path) >= cutoff
+        output_paths = @config.targets.map do |type|
+          File.join(@store.slug_dir(row[:key]), Generators.registry[type]::OUTPUT_FILE)
+        end
+        existing = output_paths.select { |p| File.exist?(p) }
+        if existing.any?
+          existing.any? { |p| File.mtime(p) >= cutoff }
+        else
+          File.mtime(row[:source_path]) >= cutoff
         end
       end
     end
