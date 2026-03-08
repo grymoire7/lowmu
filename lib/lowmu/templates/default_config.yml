@@ -20,3 +20,17 @@ targets:
   - substack_long
   - substack_short
   - mastodon_short
+
+# Author persona for brainstorm command (used in LLM prompts)
+# persona: |
+#   I write about software engineering, developer tools, and productivity.
+#   My audience is experienced developers who value depth over hype.
+
+# Sources for brainstorm command
+# sources:
+#   - type: rss
+#     url: https://example.com/feed.xml
+#     name: example-blog
+#   - type: file
+#     path: ~/notes/ideas.md
+#     name: my-ideas

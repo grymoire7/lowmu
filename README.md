@@ -73,6 +73,20 @@ targets:
   - substack_long
   - substack_short
   - mastodon_short
+
+# Author persona for brainstorm command (used in LLM prompts)
+# persona: |
+#   I write about software engineering, developer tools, and productivity.
+#   My audience is experienced developers who value depth over hype.
+
+# Sources for brainstorm command
+# sources:
+#   - type: rss
+#     url: https://example.com/feed.xml
+#     name: example-blog
+#   - type: file
+#     path: ~/notes/ideas.md
+#     name: my-ideas
 ```
 
 ## Usage
@@ -104,6 +118,25 @@ lowmu generate long/my-post-slug --force
 ```
 
 Generated files are written to `content_dir/generated/<section>/<slug>/` for review before publishing.
+
+### Brainstorm
+
+Generate content ideas from RSS feeds and local markdown files:
+
+```bash
+# Generate 5 long-form ideas (default)
+lowmu brainstorm
+
+# Generate 3 short-form ideas (~500 word drafts)
+lowmu brainstorm --form short --num 3
+
+# Reprocess all source items, ignoring previously seen state
+lowmu brainstorm --rescan
+```
+
+Ideas are written to `hugo_content_dir/ideas/` as markdown files with YAML front matter. Previously seen source items are tracked in `.lowmu/brainstorm_state.yml` and skipped on subsequent runs.
+
+Configure `persona` and `sources` in your config file to use this command (see Configuration above).
 
 
 ## Development
