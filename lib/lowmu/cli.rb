@@ -106,12 +106,13 @@ module Lowmu
     method_option :num, type: :numeric, default: 5, desc: "Number of ideas to generate"
     method_option :rescan, type: :boolean, desc: "Ignore state and reprocess all source items"
     def brainstorm
-      files = Commands::Brainstorm.new(
+      command = Commands::Brainstorm.new(
         config: Config.load,
         form: options[:form],
         num: options[:num],
         rescan: options[:rescan]
-      ).call
+      )
+      files = with_spinner("Brainstorming...") { command.call }
       say "Generated #{files.count} idea#{"s" unless files.count == 1}:"
       files.each { |f| say "  #{f}" }
     rescue Lowmu::Error => e
@@ -152,6 +153,20 @@ module Lowmu
 
       say ""
       say "#{SYMBOLS[:done]} done  #{SYMBOLS[:pending]} pending  #{SYMBOLS[:not_applicable]} not applicable  #{SYMBOLS[:stale]} stale"
+    end
+
+    def with_spinner(message, output: $stderr, tty: $stderr.tty?)
+      if tty
+        require "tty-spinner"
+        spinner = TTY::Spinner.new("[:spinner] #{message}", output: output)
+        spinner.auto_spin
+        result = yield
+        spinner.stop("done")
+        result
+      else
+        output.puts "-> #{message}"
+        yield
+      end
     end
 
     def error_exit(message)
