@@ -26,5 +26,6 @@ chmod +x .git/hooks/pre-commit
 ## Development Rules
 
 - Use TDD red-green-refactor cycle for all development.
+- Do not use worktrees. Prefer to work off main. Feature branches for riskier changes.
 
 
