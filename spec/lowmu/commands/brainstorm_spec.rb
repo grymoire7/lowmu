@@ -58,9 +58,9 @@ RSpec.describe Lowmu::Commands::Brainstorm do
       expect(files.first).to start_with("short-")
     end
 
-    it "writes files to $hugo_content_dir/ideas/" do
+    it "writes files to $content_dir/ideas/" do
       files = described_class.new(config: config, num: 2).call
-      ideas_dir = File.join(hugo_content_dir, "ideas")
+      ideas_dir = File.join(content_dir, "ideas")
       expect(File.exist?(File.join(ideas_dir, files.first))).to be true
     end
 

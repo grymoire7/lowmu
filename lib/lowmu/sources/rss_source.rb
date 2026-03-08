@@ -21,11 +21,15 @@ module Lowmu
       private
 
       def parse_item(item)
-        id = item.guid&.content || item.link
-        title = item.title
-        body = item.description || ""
+        id = atom_item?(item) ? (item.id&.content || item.link&.href) : (item.guid&.content || item.link)
+        title = atom_item?(item) ? item.title&.content : item.title
+        body = atom_item?(item) ? (item.content&.content || item.summary&.content || "") : (item.description || "")
         excerpt = strip_html(body).split.first(EXCERPT_WORDS).join(" ")
         {id: id, title: title, excerpt: excerpt, source_name: @name}
+      end
+
+      def atom_item?(item)
+        item.is_a?(RSS::Atom::Feed::Entry)
       end
 
       def strip_html(html)

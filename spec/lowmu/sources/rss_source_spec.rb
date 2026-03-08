@@ -34,5 +34,22 @@ RSpec.describe Lowmu::Sources::RssSource do
       expect(source.items.first[:excerpt]).not_to include("<strong>")
       expect(source.items.first[:excerpt]).to include("Ruby")
     end
+
+    context "with an Atom feed" do
+      let(:fixture_xml) { File.read("spec/fixtures/sample_atom_feed.xml") }
+
+      it "returns an array of item hashes" do
+        expect(source.items).to be_an(Array)
+        expect(source.items.length).to eq(2)
+      end
+
+      it "includes id, title, excerpt, and source_name" do
+        item = source.items.first
+        expect(item[:id]).to eq("https://example.com/first-atom-post")
+        expect(item[:title]).to eq("First Atom Post About Ruby")
+        expect(item[:excerpt]).to include("Ruby is a great language")
+        expect(item[:source_name]).to eq("example-blog")
+      end
+    end
   end
 end

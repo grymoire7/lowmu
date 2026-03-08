@@ -63,7 +63,7 @@ note_dirs: [notes]
 # LLM configuration for AI-assisted content generation
 llm:
   provider: anthropic
-  model: claude-sonnet-4-6
+  model: claude-sonnet-4-5
 
 # Generation targets (no auth needed — you post manually)
 # Valid types: linkedin_long, linkedin_short, substack_long, substack_short, mastodon_short

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Atom Blog</title>
+  <link href="https://example.com"/>
+  <id>https://example.com</id>
+  <entry>
+    <title>First Atom Post About Ruby</title>
+    <link href="https://example.com/first-atom-post"/>
+    <id>https://example.com/first-atom-post</id>
+    <summary>Ruby is a great language for building tools. It has a clean syntax and a rich ecosystem of gems that make development enjoyable.</summary>
+  </entry>
+  <entry>
+    <title>Second Atom Post About Testing</title>
+    <link href="https://example.com/second-atom-post"/>
+    <id>https://example.com/second-atom-post</id>
+    <summary>Testing is essential for software quality. RSpec makes it easy to write expressive tests in Ruby.</summary>
+  </entry>
+</feed>
