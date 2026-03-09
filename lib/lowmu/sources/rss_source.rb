@@ -23,9 +23,11 @@ module Lowmu
       def parse_item(item)
         id = atom_item?(item) ? (item.id&.content || item.link&.href) : (item.guid&.content || item.link)
         title = atom_item?(item) ? item.title&.content : item.title
+        url = atom_item?(item) ? item.link&.href : item.link
         body = atom_item?(item) ? (item.content&.content || item.summary&.content || "") : (item.description || "")
-        excerpt = strip_html(body).split.first(EXCERPT_WORDS).join(" ")
-        {id: id, title: title, excerpt: excerpt, source_name: @name}
+        body = strip_html(body)
+        excerpt = body.split.first(EXCERPT_WORDS).join(" ")
+        {id: id, title: title, url: url, body: body, excerpt: excerpt, source_name: @name}
       end
 
       def atom_item?(item)

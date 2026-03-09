@@ -35,6 +35,18 @@ RSpec.describe Lowmu::Sources::RssSource do
       expect(source.items.first[:excerpt]).to include("Ruby")
     end
 
+    it "includes body (full stripped HTML content)" do
+      item = source.items.first
+      expect(item).to have_key(:body)
+      expect(item[:body]).to be_a(String)
+    end
+
+    it "includes url" do
+      item = source.items.first
+      expect(item).to have_key(:url)
+      expect(item[:url]).to eq("https://example.com/first-post")
+    end
+
     context "with an Atom feed" do
       let(:fixture_xml) { File.read("spec/fixtures/sample_atom_feed.xml") }
 
