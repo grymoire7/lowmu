@@ -10,7 +10,12 @@ hugo_content_dir: ~/projects/my-blog/content
 # LLM configuration for AI-assisted content generation
 llm:
   provider: anthropic
+  # model: used for brainstorming (idea generation). Use a capable model here.
   model: claude-opus-4-6
+  # index_model: used for RSS indexing (extracting remix dimensions from cached articles).
+  # This runs once per article, so a cheaper/faster model keeps costs low.
+  # Defaults to `model` if not set.
+  # index_model: claude-haiku-4-5-20251001
 
 # Generation targets (no auth needed — you post manually)
 # Valid types: linkedin_long, linkedin_short, substack_long, substack_short, mastodon_short
