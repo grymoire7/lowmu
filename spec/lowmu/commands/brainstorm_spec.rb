@@ -71,6 +71,60 @@ RSpec.describe Lowmu::Commands::Brainstorm do
       expect(File.exist?(File.join(ideas_dir, files.first))).to be true
     end
 
+    context "when the LLM response uses variant formatting" do
+      it "parses ideas when separators have trailing whitespace" do
+        variant_response = <<~RESPONSE
+          TITLE: Testing Ruby Applications
+          CONCEPT_SOURCE: fresh
+          ANGLE_SOURCE: fresh
+          AUDIENCE_SOURCE: fresh
+          EXAMPLES_SOURCE: fresh
+          CONCLUSION_SOURCE: fresh
+          BODY:
+          A comprehensive look at testing strategies for Ruby.
+
+          ---
+
+          TITLE: Effective Metaprogramming
+          CONCEPT_SOURCE: fresh
+          ANGLE_SOURCE: fresh
+          AUDIENCE_SOURCE: fresh
+          EXAMPLES_SOURCE: fresh
+          CONCLUSION_SOURCE: fresh
+          BODY:
+          How to use Ruby metaprogramming without losing your mind.
+        RESPONSE
+        mock_llm_response(content: variant_response)
+        files = described_class.new(config: config, num: 2).call
+        expect(files.length).to eq(2)
+      end
+
+      it "parses ideas when BODY content is on the same line as BODY:" do
+        inline_body_response = <<~RESPONSE
+          TITLE: Testing Ruby Applications
+          CONCEPT_SOURCE: fresh
+          ANGLE_SOURCE: fresh
+          AUDIENCE_SOURCE: fresh
+          EXAMPLES_SOURCE: fresh
+          CONCLUSION_SOURCE: fresh
+          BODY: A comprehensive look at testing strategies for Ruby.
+
+          ---
+
+          TITLE: Effective Metaprogramming
+          CONCEPT_SOURCE: fresh
+          ANGLE_SOURCE: fresh
+          AUDIENCE_SOURCE: fresh
+          EXAMPLES_SOURCE: fresh
+          CONCLUSION_SOURCE: fresh
+          BODY: How to use Ruby metaprogramming without losing your mind.
+        RESPONSE
+        mock_llm_response(content: inline_body_response)
+        files = described_class.new(config: config, num: 2).call
+        expect(files.length).to eq(2)
+      end
+    end
+
     it "includes persona in the LLM prompt" do
       mock_chat = mock_llm_response(content: llm_response)
       described_class.new(config: config, num: 2).call

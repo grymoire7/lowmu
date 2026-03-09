@@ -171,7 +171,7 @@ module Lowmu
           audience_match = block.match(/^AUDIENCE_SOURCE:\s*(.+)$/)
           examples_match = block.match(/^EXAMPLES_SOURCE:\s*(.+)$/)
           conclusion_match = block.match(/^CONCLUSION_SOURCE:\s*(.+)$/)
-          body_match = block.match(/^BODY:\s*\n(.*)/m)
+          body_match = block.match(/^BODY:\s*\n?(.*)/m)
           next unless title_match && body_match
           {
             title: title_match[1].strip,
