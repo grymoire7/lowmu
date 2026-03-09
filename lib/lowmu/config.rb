@@ -2,7 +2,7 @@ module Lowmu
   class Config
     DEFAULT_PATH = "~/.config/lowmu/config.yml"
 
-    attr_reader :hugo_content_dir, :content_dir, :llm, :targets, :post_dirs, :note_dirs, :persona, :sources
+    attr_reader :hugo_content_dir, :content_dir, :llm, :targets, :post_dirs, :note_dirs, :persona, :sources, :index_model
 
     def self.load(path = DEFAULT_PATH)
       expanded = File.expand_path(path)
@@ -22,6 +22,7 @@ module Lowmu
       @note_dirs = data.fetch("note_dirs", ["notes"])
       @persona = data.fetch("persona", nil)
       @sources = data.fetch("sources", [])
+      @index_model = @llm.fetch("index_model", @llm.fetch("model", nil))
     end
 
     private

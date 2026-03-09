@@ -101,6 +101,26 @@ RSpec.describe Lowmu::Config do
     end
   end
 
+  describe "#index_model" do
+    it "returns the index_model from llm config when set" do
+      config = described_class.new({
+        "hugo_content_dir" => "/tmp/hugo",
+        "targets" => ["mastodon_short"],
+        "llm" => {"model" => "claude-opus-4-6", "index_model" => "claude-haiku-4-5-20251001"}
+      })
+      expect(config.index_model).to eq("claude-haiku-4-5-20251001")
+    end
+
+    it "falls back to model when index_model is not set" do
+      config = described_class.new({
+        "hugo_content_dir" => "/tmp/hugo",
+        "targets" => ["mastodon_short"],
+        "llm" => {"model" => "claude-opus-4-6"}
+      })
+      expect(config.index_model).to eq("claude-opus-4-6")
+    end
+  end
+
   describe "validation" do
     it "raises when hugo_content_dir is missing" do
       expect { described_class.new({}) }
