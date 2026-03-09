@@ -105,12 +105,16 @@ module Lowmu
     method_option :form, type: :string, default: "long", desc: "Idea form: long or short"
     method_option :num, type: :numeric, default: 5, desc: "Number of ideas to generate"
     method_option :rescan, type: :boolean, desc: "Ignore state and reprocess all source items"
+    method_option :recent, type: :string, desc: "Only use sources fetched within duration (e.g. 7d, 2w)"
+    method_option :per_source, type: :numeric, default: 3, desc: "Items per source to include in brainstorm palette"
     def brainstorm
       command = Commands::Brainstorm.new(
         config: Config.load,
         form: options[:form],
         num: options[:num],
-        rescan: options[:rescan]
+        rescan: options[:rescan],
+        recent: options[:recent],
+        per_source: options[:per_source]
       )
       files = with_spinner("Brainstorming...") { command.call }
       say "Generated #{files.count} idea#{"s" unless files.count == 1}:"

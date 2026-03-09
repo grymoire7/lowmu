@@ -266,6 +266,18 @@ RSpec.describe Lowmu::CLI do
       Lowmu::CLI.start(["brainstorm", "--rescan"])
     end
 
+    it "passes --recent to the brainstorm command" do
+      cmd_double = instance_double(Lowmu::Commands::Brainstorm, call: [])
+      expect(Lowmu::Commands::Brainstorm).to receive(:new).with(hash_including(recent: "7d")).and_return(cmd_double)
+      Lowmu::CLI.start(["brainstorm", "--recent", "7d"])
+    end
+
+    it "passes --per-source to the brainstorm command" do
+      cmd_double = instance_double(Lowmu::Commands::Brainstorm, call: [])
+      expect(Lowmu::Commands::Brainstorm).to receive(:new).with(hash_including(per_source: 5)).and_return(cmd_double)
+      Lowmu::CLI.start(["brainstorm", "--per-source", "5"])
+    end
+
     it "prints an error on Lowmu::Error" do
       allow(Lowmu::Commands::Brainstorm).to receive(:new).and_return(
         instance_double(Lowmu::Commands::Brainstorm, call: nil).tap do |d|
