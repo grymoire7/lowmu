@@ -291,11 +291,11 @@ RSpec.describe Lowmu::CLI do
       expect { Lowmu::CLI.start(["brainstorm"]) }.to output(/No new source items found/).to_stdout.and raise_error(SystemExit)
     end
 
-    it "reports progress to stderr while running" do
-      allow(Lowmu::Commands::Brainstorm).to receive(:new).and_return(
-        instance_double(Lowmu::Commands::Brainstorm, call: ["long-idea-one.md"])
-      )
-      expect { Lowmu::CLI.start(["brainstorm"]) }.to output(/Brainstorming/).to_stderr
+    it "passes a with_progress callback to the command" do
+      expect(Lowmu::Commands::Brainstorm).to receive(:new).with(
+        hash_including(with_progress: instance_of(Method))
+      ).and_return(instance_double(Lowmu::Commands::Brainstorm, call: []))
+      Lowmu::CLI.start(["brainstorm"])
     end
   end
 

@@ -114,9 +114,10 @@ module Lowmu
         num: options[:num],
         rescan: options[:rescan],
         recent: options[:recent],
-        per_source: options[:per_source]
+        per_source: options[:per_source],
+        with_progress: method(:with_spinner)
       )
-      files = with_spinner("Brainstorming...") { command.call }
+      files = command.call
       say "Generated #{files.count} idea#{"s" unless files.count == 1}:"
       files.each { |f| say "  #{f}" }
     rescue Lowmu::Error => e
