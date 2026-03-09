@@ -1,134 +1,165 @@
+require "json"
+
 module Lowmu
   module Commands
     class Brainstorm
-      def initialize(config:, form: "long", num: 5, rescan: false)
+      def initialize(config:, form: "long", num: 5, rescan: false, recent: nil, per_source: 3)
         @config = config
         @form = form
         @num = num
         @rescan = rescan
+        @recent = recent
+        @per_source = per_source
         @state = BrainstormState.new(config.content_dir)
         @writer = IdeaWriter.new(File.join(config.content_dir, "ideas"))
       end
 
       def call
         configure_llm
-        items = gather_items
-        raise Error, "No new source items found. Use --rescan to reprocess existing items." if items.empty?
+        cache_rss_items
+        index_rss_items
+        palette = build_palette
+        raise Error, "No source items found. Add sources to your config or use --rescan." if palette.empty?
 
-        response = ask_llm(build_prompt(items))
+        response = ask_llm(build_prompt(palette))
         ideas = parse_response(response)
-        files = ideas.map { |idea| @writer.write(**idea) }
-
-        items.group_by { |i| i[:source_name] }.each do |name, source_items|
-          @state.mark_seen(name, source_items.map { |i| i[:id] })
-        end
-
-        files
+        ideas.map { |idea| @writer.write(**idea) }
       end
 
       private
 
-      def gather_items
-        @config.sources.flat_map do |source|
-          all_items = build_source(source).items
-          @rescan ? all_items : all_items.reject { |item| @state.seen?(source["name"], item[:id]) }
+      # Phase 1: fetch and cache new RSS items
+      def cache_rss_items
+        rss_sources.each do |source|
+          cache = RssItemCache.new(@config.content_dir)
+          build_rss_source(source).items.each do |item|
+            next if !@rescan && @state.cached?(source["name"], item[:id])
+
+            path = cache.write(item)
+            @state.mark_cached(source["name"], item[:id], path)
+          end
         end
       end
 
-      def build_source(source)
-        case source["type"]
-        when "rss" then Sources::RssSource.new(name: source["name"], url: source["url"])
-        when "file" then Sources::FileSource.new(name: source["name"], path: source["path"])
-        else raise Error, "Unknown source type: #{source["type"]}. Valid types: rss, file"
+      # Phase 2: index any cache files that lack a corresponding index file
+      def index_rss_items
+        indexer = RssItemIndexer.new(
+          content_dir: @config.content_dir,
+          model: @config.index_model,
+          rescan: @rescan
+        )
+        cache_dir = File.join(@config.content_dir, "rss", "cache")
+        return unless Dir.exist?(cache_dir)
+
+        Dir.glob("#{cache_dir}/*.md").each do |full_path|
+          relative = full_path.delete_prefix("#{File.expand_path(@config.content_dir)}/")
+          indexer.index(relative)
         end
       end
 
-      def build_prompt(items)
-        items_text = items.map { |i| "Source: #{i[:source_name]}\nTitle: #{i[:title]}\n#{i[:excerpt]}" }.join("\n\n---\n\n")
-        form_instruction = if @form == "short"
-          "Write each idea as a complete ~500 word draft."
-        else
+      # Phase 3a: build the palette from index files + file sources
+      def build_palette
+        rss_items = load_index_items
+        file_items = load_file_items
+        rss_items + file_items
+      end
+
+      def load_index_items
+        index_dir = File.join(@config.content_dir, "rss", "index")
+        return [] unless Dir.exist?(index_dir)
+
+        all = Dir.glob("#{index_dir}/*.json").filter_map do |path|
+          JSON.parse(File.read(path))
+        rescue JSON::ParserError
+          nil
+        end
+
+        all = filter_by_recent(all) if @recent
+
+        by_source = all.group_by { |item| item["source_name"] }
+        by_source.flat_map { |_, items| items.first(@per_source) }
+      end
+
+      def filter_by_recent(items)
+        cutoff = Date.today - (DurationParser.parse(@recent) / 86_400)
+        items.select do |item|
+          fetched = Date.parse(item["fetched_at"].to_s)
+          fetched && fetched >= cutoff
+        rescue Date::Error
+          false
+        end
+      end
+
+      def load_file_items
+        file_sources.flat_map do |source|
+          build_file_source(source).items
+        end
+      end
+
+      def build_prompt(palette)
+        items_text = palette.map { |item| format_palette_item(item) }.join("\n\n---\n\n")
+        form_instruction = (@form == "short") ?
+          "Write each idea as a complete ~500 word draft." :
           "Write each idea as a one-paragraph summary followed by a list of potential sections."
-        end
 
         <<~PROMPT
           You are a creative content strategist specializing in AI-assisted software development.
           Your job is to generate original article ideas inspired by — but clearly distinct from —
-          a set of source articles provided as titles and short excerpts.
-          
-          You are NOT summarizing or restating these articles. You are remixing them. A good remix
-          borrows selectively from multiple sources, never taking too much from any single one.
-          
+          a set of source articles provided as structured metadata.
+
+          You are NOT summarizing or restating these articles. You are remixing them.
+
           Each article idea you generate should borrow each of the following elements from a
           DIFFERENT source article:
-          
-          1. **The concept or topic** — the core subject being explored (eg. cognitive debt,
-             context switching, prompt engineering, etc.)
-          
-          2. **The angle or take** — the stance or framing of the piece. Is it a warning? A
-             defense of an unpopular position? A beginner's guide? A critique? A celebration?
-          
-          3. **The audience and framing** — who the piece is written for and what that reader
-             is assumed to already know or care about.
-          
-          4. **The examples or scenarios** — the specific tools, workflows, codebases, or
-             situations used to make the point concrete.
-          
-          5. **The conclusion or proposed solution** — what the reader is left thinking or
-             what they're encouraged to do.
-          
-          IMPORTANT: If you borrow the concept or topic from a source article, you must take
-          the examples, angle, and conclusion from different sources or invent them fresh.
-          Never carry over the specific examples, analogies, or proposed solutions from the
-          same article you borrowed the topic from. The more distinctive an element is to its
-          source (a memorable analogy, a specific tool, a strong opinion), the more important
-          it is to leave it behind.
-          
-          The author's voice and style are fixed and not a variable. Do not borrow or vary
-          these. Focus only on what the piece is about, who it's for, how it's framed, and
-          how it's structured.
-          
+
+          1. **The concept or topic**
+          2. **The angle or take**
+          3. **The audience and framing**
+          4. **The examples or scenarios**
+          5. **The conclusion or proposed solution**
+
           Here is the author persona:
-          
+
               #{@config.persona}
-          
-          Here are recent articles from a curated feed.
-          Each entry includes a title and short excerpt only.
-          
+
+          Here are recent articles from a curated feed, each pre-analyzed for remix dimensions:
+
           <articles>
               #{items_text}
           </articles>
-          
-          Before generating ideas, take one unlabeled scratch-pad step: scan the articles and
-          note the distinct concepts, angles, audiences, examples, and conclusions you can
-          identify. Then use those as your palette.
-          
-          
+
           Generate #{@num} original article ideas for #{@form}-form posts.
           For each idea:
-          
+
           - **Pitch:** #{form_instruction}
           - **Audience:** Who is this for and what do they already know?
-          - **Format:** What structure will this take? (tutorial, opinion, case study,
-            explainer, common-mistakes list, narrative, etc.)
-          - **Remix breakdown:** For each of the five elements (concept, angle, audience,
-            examples, conclusion), name which source article it came from — or note that it
-            was invented fresh. If any two elements point to the same source article, explain
-            why that was unavoidable.
-          
+          - **Format:** What structure will this take?
+          - **Remix breakdown:** For each of the five elements, name which source article it came
+            from (use the title) — or note it was invented fresh.
+
           Format your response for each idea exactly as follows:
 
             TITLE: A one-line title for the idea
-            CONCEPT_SOURCE: The title of the article that inspired the core concept or topic of the idea. If invented fresh, note that here as well.
-            ANGLE_SOURCE: The title of the article that inspired the angle or take of the idea. If invented fresh, note that here as well.
-            AUDIENCE_SOURCE: The title of the article that inspired the audience and framing of the idea. If invented fresh, note that here as well.
-            EXAMPLES_SOURCE: The title of the article that inspired the examples or scenarios used in the idea. If invented fresh, note that here as well.
-            CONCLUSION_SOURCE: The title of the article that inspired the conclusion or proposed solution of the idea. If invented fresh, note that here as well.
-            BODY: A detailed description of the idea, including the pitch, audience, format, and remix breakdown. This should be a few paragraphs long, not just a one-liner.
+            CONCEPT_SOURCE: Title of source article (or "fresh")
+            ANGLE_SOURCE: Title of source article (or "fresh")
+            AUDIENCE_SOURCE: Title of source article (or "fresh")
+            EXAMPLES_SOURCE: Title of source article (or "fresh")
+            CONCLUSION_SOURCE: Title of source article (or "fresh")
+            BODY: A detailed description of the idea. Several paragraphs.
 
           Provide exactly #{@num} ideas, each separated by "---".
-            
         PROMPT
+      end
+
+      def format_palette_item(item)
+        if item.is_a?(Hash) && item.key?("concept")
+          "Title: #{item["title"]}\nSource: #{item["source_name"]}\n" \
+            "Concept: #{item["concept"]}\nAngle: #{item["angle"]}\n" \
+            "Audience: #{item["audience"]}\nExamples: #{item["examples"]}\n" \
+            "Conclusion: #{item["conclusion"]}"
+        else
+          "Source: #{item[:source_name]}\nTitle: #{item[:title]}\n#{item[:excerpt]}"
+        end
       end
 
       def parse_response(response)
@@ -140,7 +171,6 @@ module Lowmu
           audience_match = block.match(/^AUDIENCE_SOURCE:\s*(.+)$/)
           examples_match = block.match(/^EXAMPLES_SOURCE:\s*(.+)$/)
           conclusion_match = block.match(/^CONCLUSION_SOURCE:\s*(.+)$/)
-          # source_match = block.match(/^SOURCE:\s*(.+)$/)
           body_match = block.match(/^BODY:\s*\n(.*)/m)
           next unless title_match && body_match
           {
@@ -150,11 +180,26 @@ module Lowmu
             audience_source: audience_match&.[](1)&.strip || "unknown",
             examples_source: examples_match&.[](1)&.strip || "unknown",
             conclusion_source: conclusion_match&.[](1)&.strip || "unknown",
-            # source_name: source_match&.[](1)&.strip || "unknown",
             form: @form,
             body: body_match[1].strip
           }
         end
+      end
+
+      def rss_sources
+        @config.sources.select { |s| s["type"] == "rss" }
+      end
+
+      def file_sources
+        @config.sources.select { |s| s["type"] == "file" }
+      end
+
+      def build_rss_source(source)
+        Sources::RssSource.new(name: source["name"], url: source["url"])
+      end
+
+      def build_file_source(source)
+        Sources::FileSource.new(name: source["name"], path: source["path"])
       end
 
       def ask_llm(prompt)
