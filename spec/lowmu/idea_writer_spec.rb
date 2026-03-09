@@ -11,7 +11,11 @@ RSpec.describe Lowmu::IdeaWriter do
       writer.write(
         title: "Ruby Metaprogramming Tips",
         form: "long",
-        source_name: "my-blog",
+        concept_source: "blog-a",
+        angle_source: "blog-b",
+        audience_source: "blog-c",
+        examples_source: "blog-d",
+        conclusion_source: "blog-e",
         body: "Here is a great idea about metaprogramming."
       )
     end
@@ -32,11 +36,15 @@ RSpec.describe Lowmu::IdeaWriter do
       expect(File.exist?(File.join(ideas_dir, filename))).to be true
     end
 
-    it "writes YAML front matter with title, form, source, and date" do
+    it "writes YAML front matter with title, form, sources, and date" do
       content = File.read(File.join(ideas_dir, filename))
       expect(content).to include("title: \"Ruby Metaprogramming Tips\"")
       expect(content).to include("form: long")
-      expect(content).to include("source: my-blog")
+      expect(content).to include("concept_source: blog-a")
+      expect(content).to include("angle_source: blog-b")
+      expect(content).to include("audience_source: blog-c")
+      expect(content).to include("examples_source: blog-d")
+      expect(content).to include("conclusion_source: blog-e")
       expect(content).to include("date: #{Date.today}")
     end
 
@@ -47,7 +55,7 @@ RSpec.describe Lowmu::IdeaWriter do
 
     it "creates the ideas directory if it does not exist" do
       new_dir = File.join(Dir.mktmpdir, "new_ideas")
-      described_class.new(new_dir).write(title: "Test", form: "short", source_name: "s", body: "b")
+      described_class.new(new_dir).write(title: "Test", form: "short", concept_source: "s", angle_source: "s", audience_source: "s", examples_source: "s", conclusion_source: "s", body: "b")
       expect(Dir.exist?(new_dir)).to be true
     end
   end

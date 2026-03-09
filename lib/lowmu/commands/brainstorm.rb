@@ -116,6 +116,16 @@ module Lowmu
             was invented fresh. If any two elements point to the same source article, explain
             why that was unavoidable.
           
+          Format your response for each idea exactly as follows:
+
+            TITLE: A one-line title for the idea
+            CONCEPT_SOURCE: The title of the article that inspired the core concept or topic of the idea. If invented fresh, note that here as well.
+            ANGLE_SOURCE: The title of the article that inspired the angle or take of the idea. If invented fresh, note that here as well.
+            AUDIENCE_SOURCE: The title of the article that inspired the audience and framing of the idea. If invented fresh, note that here as well.
+            EXAMPLES_SOURCE: The title of the article that inspired the examples or scenarios used in the idea. If invented fresh, note that here as well.
+            CONCLUSION_SOURCE: The title of the article that inspired the conclusion or proposed solution of the idea. If invented fresh, note that here as well.
+            BODY: A detailed description of the idea, including the pitch, audience, format, and remix breakdown. This should be a few paragraphs long, not just a one-liner.
+
           Provide exactly #{@num} ideas, each separated by "---".
             
         PROMPT
@@ -124,13 +134,23 @@ module Lowmu
       def parse_response(response)
         blocks = response.split(/^---$/).map(&:strip).reject(&:empty?)
         blocks.first(@num).filter_map do |block|
-          title_match = block.match(/^IDEA:\s*(.+)$/)
-          source_match = block.match(/^SOURCE:\s*(.+)$/)
+          title_match = block.match(/^TITLE:\s*(.+)$/)
+          concept_match = block.match(/^CONCEPT_SOURCE:\s*(.+)$/)
+          angle_match = block.match(/^ANGLE_SOURCE:\s*(.+)$/)
+          audience_match = block.match(/^AUDIENCE_SOURCE:\s*(.+)$/)
+          examples_match = block.match(/^EXAMPLES_SOURCE:\s*(.+)$/)
+          conclusion_match = block.match(/^CONCLUSION_SOURCE:\s*(.+)$/)
+          # source_match = block.match(/^SOURCE:\s*(.+)$/)
           body_match = block.match(/^BODY:\s*\n(.*)/m)
           next unless title_match && body_match
           {
             title: title_match[1].strip,
-            source_name: source_match&.[](1)&.strip || "unknown",
+            concept_source: concept_match&.[](1)&.strip || "unknown",
+            angle_source: angle_match&.[](1)&.strip || "unknown",
+            audience_source: audience_match&.[](1)&.strip || "unknown",
+            examples_source: examples_match&.[](1)&.strip || "unknown",
+            conclusion_source: conclusion_match&.[](1)&.strip || "unknown",
+            # source_name: source_match&.[](1)&.strip || "unknown",
             form: @form,
             body: body_match[1].strip
           }
