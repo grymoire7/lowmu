@@ -223,6 +223,10 @@ RSpec.describe Lowmu::CLI do
         sources: [])
     end
 
+    around do |example|
+      suppress_output { example.run }
+    end
+
     before do
       allow(Lowmu::Config).to receive(:load).and_return(config)
     end
