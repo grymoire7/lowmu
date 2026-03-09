@@ -178,6 +178,20 @@ RSpec.describe Lowmu::Commands::Brainstorm do
       end
     end
 
+    it "invokes with_progress for each phase" do
+      messages = []
+      progress = ->(msg, &block) {
+        messages << msg
+        block.call
+      }
+      described_class.new(config: config, num: 2, with_progress: progress).call
+      expect(messages).to include(
+        a_string_matching(/RSS/i),
+        a_string_matching(/index/i),
+        a_string_matching(/LLM/i)
+      )
+    end
+
     it "raises an error when no source items are available" do
       empty_file = File.join(Dir.mktmpdir, "empty.md")
       FileUtils.touch(empty_file)

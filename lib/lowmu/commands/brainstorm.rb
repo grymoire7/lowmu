@@ -3,25 +3,28 @@ require "json"
 module Lowmu
   module Commands
     class Brainstorm
-      def initialize(config:, form: "long", num: 5, rescan: false, recent: nil, per_source: 3)
+      NO_OP_PROGRESS = ->(msg, &block) { block.call }
+
+      def initialize(config:, form: "long", num: 5, rescan: false, recent: nil, per_source: 3, with_progress: NO_OP_PROGRESS)
         @config = config
         @form = form
         @num = num
         @rescan = rescan
         @recent = recent
         @per_source = per_source
+        @with_progress = with_progress
         @state = BrainstormState.new(config.content_dir)
         @writer = IdeaWriter.new(File.join(config.content_dir, "ideas"))
       end
 
       def call
         configure_llm
-        cache_rss_items
-        index_rss_items
+        @with_progress.call("Fetching RSS feeds...") { cache_rss_items }
+        @with_progress.call("Indexing items...") { index_rss_items }
         palette = build_palette
         raise Error, "No source items found. Add sources to your config or use --rescan." if palette.empty?
 
-        response = ask_llm(build_prompt(palette))
+        response = @with_progress.call("Asking LLM...") { ask_llm(build_prompt(palette)) }
         ideas = parse_response(response)
         ideas.map { |idea| @writer.write(**idea) }
       end
@@ -69,7 +72,9 @@ module Lowmu
         return [] unless Dir.exist?(index_dir)
 
         all = Dir.glob("#{index_dir}/*.json").filter_map do |path|
-          JSON.parse(File.read(path))
+          data = JSON.parse(File.read(path))
+          data["index_path"] ||= path.delete_prefix("#{File.expand_path(@config.content_dir)}/")
+          data
         rescue JSON::ParserError
           nil
         end
@@ -135,16 +140,16 @@ module Lowmu
           - **Audience:** Who is this for and what do they already know?
           - **Format:** What structure will this take?
           - **Remix breakdown:** For each of the five elements, name which source article it came
-            from (use the title) — or note it was invented fresh.
+            from (use its Index filename, e.g. "../rss/index/2026-03-09-source-slug.json") — or note it was invented fresh.
 
           Format your response for each idea exactly as follows:
 
             TITLE: A one-line title for the idea
-            CONCEPT_SOURCE: Title of source article (or "fresh")
-            ANGLE_SOURCE: Title of source article (or "fresh")
-            AUDIENCE_SOURCE: Title of source article (or "fresh")
-            EXAMPLES_SOURCE: Title of source article (or "fresh")
-            CONCLUSION_SOURCE: Title of source article (or "fresh")
+            CONCEPT_SOURCE: Index filename of source article (or "fresh")
+            ANGLE_SOURCE: Index filename of source article (or "fresh")
+            AUDIENCE_SOURCE: Index filename of source article (or "fresh")
+            EXAMPLES_SOURCE: Index filename of source article (or "fresh")
+            CONCLUSION_SOURCE: Index filename of source article (or "fresh")
             BODY: A detailed description of the idea. Several paragraphs.
 
           Provide exactly #{@num} ideas, each separated by "---".
@@ -153,7 +158,7 @@ module Lowmu
 
       def format_palette_item(item)
         if item.is_a?(Hash) && item.key?("concept")
-          "Title: #{item["title"]}\nSource: #{item["source_name"]}\n" \
+          "Title: #{item["title"]}\nIndex: #{item["index_path"]}\nSource: #{item["source_name"]}\n" \
             "Concept: #{item["concept"]}\nAngle: #{item["angle"]}\n" \
             "Audience: #{item["audience"]}\nExamples: #{item["examples"]}\n" \
             "Conclusion: #{item["conclusion"]}"
