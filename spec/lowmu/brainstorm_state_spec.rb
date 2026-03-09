@@ -6,41 +6,52 @@ RSpec.describe Lowmu::BrainstormState do
 
   after { FileUtils.rm_rf(content_dir) }
 
-  describe "#seen?" do
+  describe "#cached?" do
     it "returns false for an unknown id" do
-      expect(state.seen?("my-source", "abc123")).to be false
+      expect(state.cached?("my-source", "abc123")).to be false
     end
 
-    it "returns true after mark_seen" do
-      state.mark_seen("my-source", ["abc123"])
-      expect(state.seen?("my-source", "abc123")).to be true
+    it "returns true after mark_cached" do
+      state.mark_cached("my-source", "abc123", "rss/cache/2026-03-08-my-source-foo.md")
+      expect(state.cached?("my-source", "abc123")).to be true
     end
 
     it "returns false for an id from a different source" do
-      state.mark_seen("source-a", ["abc123"])
-      expect(state.seen?("source-b", "abc123")).to be false
+      state.mark_cached("source-a", "abc123", "rss/cache/2026-03-08-source-a-foo.md")
+      expect(state.cached?("source-b", "abc123")).to be false
     end
   end
 
-  describe "#mark_seen" do
-    it "persists state to disk" do
-      state.mark_seen("my-source", ["abc123"])
+  describe "#cache_path_for" do
+    it "returns nil for an unknown id" do
+      expect(state.cache_path_for("my-source", "abc123")).to be_nil
+    end
+
+    it "returns the path after mark_cached" do
+      state.mark_cached("my-source", "abc123", "rss/cache/2026-03-08-my-source-foo.md")
+      expect(state.cache_path_for("my-source", "abc123")).to eq("rss/cache/2026-03-08-my-source-foo.md")
+    end
+  end
+
+  describe "#mark_cached" do
+    it "persists to disk" do
+      state.mark_cached("my-source", "abc123", "rss/cache/2026-03-08-my-source-foo.md")
       reloaded = described_class.new(content_dir)
-      expect(reloaded.seen?("my-source", "abc123")).to be true
+      expect(reloaded.cached?("my-source", "abc123")).to be true
     end
 
-    it "accumulates ids across calls" do
-      state.mark_seen("my-source", ["id1"])
-      state.mark_seen("my-source", ["id2"])
-      expect(state.seen?("my-source", "id1")).to be true
-      expect(state.seen?("my-source", "id2")).to be true
+    it "accumulates entries across calls" do
+      state.mark_cached("my-source", "id1", "rss/cache/path1.md")
+      state.mark_cached("my-source", "id2", "rss/cache/path2.md")
+      expect(state.cached?("my-source", "id1")).to be true
+      expect(state.cached?("my-source", "id2")).to be true
     end
 
-    it "does not duplicate ids" do
-      state.mark_seen("my-source", ["id1"])
-      state.mark_seen("my-source", ["id1"])
-      state_file = YAML.safe_load_file(File.join(content_dir, "brainstorm_state.yml"))
-      expect(state_file["sources"]["my-source"]["last_seen_ids"].count("id1")).to eq(1)
+    it "does not duplicate entries" do
+      state.mark_cached("my-source", "id1", "rss/cache/path1.md")
+      state.mark_cached("my-source", "id1", "rss/cache/path1.md")
+      raw = YAML.safe_load_file(File.join(content_dir, "brainstorm_state.yml"))
+      expect(raw["sources"]["my-source"]["cached_items"].count { |id, _| id == "id1" }).to eq(1)
     end
   end
 end
