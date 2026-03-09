@@ -38,9 +38,8 @@ module Lowmu
       body = cache_content.split(/^---\s*$/, 3).last.to_s.strip
 
       prompt = PROMPT % {content: "#{front_matter["title"]}\n\n#{body}"}
-      raw = RubyLLM.chat(model: @model).ask(prompt).content.strip
-      raw = raw.gsub(/\A```(?:json)?\s*/, "").gsub(/\s*```\z/, "")
-      dimensions = JSON.parse(raw)
+      raw = RubyLLM.chat(model: @model).ask(prompt).content
+      dimensions = JsonExtractor.call(raw)
 
       data = front_matter.slice("title", "url", "source_name", "fetched_at", "full_content").merge(
         "cache_path" => cache_relative_path,
