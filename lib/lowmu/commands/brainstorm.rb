@@ -24,7 +24,7 @@ module Lowmu
         palette = build_palette
         raise Error, "No source items found. Add sources to your config or use --rescan." if palette.empty?
 
-        response = @with_progress.call("Asking LLM...") { ask_llm(build_prompt(palette)) }
+        response = @with_progress.call("Generating ideas...") { ask_llm(build_prompt(palette)) }
         ideas = parse_response(response)
         ideas.map { |idea| @writer.write(**idea) }
       end

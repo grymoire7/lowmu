@@ -188,7 +188,7 @@ RSpec.describe Lowmu::Commands::Brainstorm do
       expect(messages).to include(
         a_string_matching(/RSS/i),
         a_string_matching(/index/i),
-        a_string_matching(/LLM/i)
+        a_string_matching(/ideas/i)
       )
     end
 

@@ -163,7 +163,8 @@ module Lowmu
     def with_spinner(message, output: $stderr, tty: $stderr.tty?)
       if tty
         require "tty-spinner"
-        spinner = TTY::Spinner.new("[:spinner] #{message}", output: output)
+        spinner_format = [:pulse, :dots, :dots_10, :flip, :toss, :points_2, :pong].sample
+        spinner = TTY::Spinner.new("[:spinner] #{message}", format: spinner_format, output: output)
         spinner.auto_spin
         result = yield
         spinner.stop("done")
